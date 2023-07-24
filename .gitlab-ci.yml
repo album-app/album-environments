@@ -35,7 +35,6 @@
     - '.\micromamba\Library\bin\micromamba.exe create -y -n album-environments -c conda-forge python=3.10'
     - '.\micromamba\Library\bin\micromamba.exe run -n album-environments pip uninstall -y album-environments'
     - '.\micromamba\Library\bin\micromamba.exe run -n album-environments pip install -e .'
-    - '.\micromamba\Library\bin\micromamba.exe run -n album-environments pip install coverage'
     - '.\micromamba\Library\bin\micromamba.exe shell init -s powershell -p $Env:MAMBA_ROOT_PREFIX '
 
   tags:
@@ -213,7 +212,8 @@
     - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
     - conda init bash
     - source ~/.bashrc
-    - conda install -y mamba -c conda-forge
+    - conda install 'mamba<=1.4.5' -n base -c conda-forge
+    - conda update mamba -n base -c conda-forge
     - conda activate album-environments
     - pip install -e .
     - which python
@@ -317,7 +317,8 @@
     - bash $tmpdir/miniconda.sh -b -p $tmpdir/miniconda
     - export PATH=$PATH:$tmpdir/miniconda/bin/
     - echo $PATH
-    - conda install -y mamba -c conda-forge
+    - conda install 'mamba<=1.4.5' -n base -c conda-forge
+    - conda update mamba -n base -c conda-forge
     - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
     - source $tmpdir/miniconda/bin/activate
     - conda activate album-environments
@@ -589,13 +590,32 @@ integration tests windows micromamba:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album-environments 2>&1 | Write-Host; coverage run --omit .\test_album_environments\* -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "integration.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
-  artifacts:
-    paths:
-      - integration.coverage
+    - $cmnd = powershell.exe -command {micromamba activate album-environments 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} exit($lastexitcode)}
 
 integration tests windows conda:
   extends: .windows_base_template_conda
   stage: test
   script:
     - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir https://gitlab.com/album-app/album/-/archive/$env:CI_COMMIT_REF_NAME/album-$env:CI_COMMIT_REF_NAME.zip 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; exit($lastexitcode)}
+
+# Create combined coverage reports
+
+create combined coverage for linux:
+  extends: .linux_base_template_micromamba
+  stage: test
+  dependencies:
+    - unit tests linux micromamba
+    - integration tests linux micromamba
+  needs:
+    - unit tests linux micromamba
+    - integration tests linux micromamba
+  script:
+    - coverage combine unit.coverage integration.coverage
+    - coverage report
+    - coverage xml
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml

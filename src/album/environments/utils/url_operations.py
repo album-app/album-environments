@@ -6,7 +6,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
-from album.ci.utils.zenodo_api import ResponseStatus
 from album.environments.utils.file_operations import (
     create_path_recursively,
     copy,
@@ -64,7 +63,7 @@ def _request_get(url):
     with _get_session() as s:
         r = s.get(url, allow_redirects=True, stream=True)
 
-        if r.status_code != ResponseStatus.OK.value:
+        if r.status_code != 200:
             raise ConnectionError("Could not connect to resource %s!" % url)
 
         return r
@@ -74,7 +73,7 @@ def retrieve_redirect_url(url):
     with _get_session() as s:
         r = s.get(url, allow_redirects=True, stream=False)
 
-        if r.status_code != ResponseStatus.OK.value:
+        if r.status_code != 200:
             raise ConnectionError("Could not connect to resource %s!" % url)
 
         return r.url

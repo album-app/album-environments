@@ -505,13 +505,13 @@ integration tests linux conda:
   extends: .linux_base_template_conda
   stage: test
   script:
-    - python -m unittest test_album_environments/integration/run_integration_conda.py
+    - python -m unittest test_album_environments/integration/run_all_integration.py
 
 integration tests linux conda with mamba:
   extends: .linux_base_template_conda_with_mamba
   stage: test
   script:
-    - python -m unittest test_album_environments/integration/run_integration_conda.py
+    - python -m unittest test_album_environments/integration/run_all_integration.py
 
 # MacOs Tests
 
@@ -544,14 +544,14 @@ integration tests macos conda:
   extends: .macos_base_template_conda
   stage: test
   script:
-    - python -m unittest test_album_environments/integration/run_integration_conda.py
+    - python -m unittest test_album_environments/integration/run_all_integration.py
 
 
 integration tests macos conda with mamba:
   extends: .macos_base_template_conda_with_mamba
   stage: test
   script:
-    - python -m unittest test_album_environments/integration/run_integration_conda.py
+    - python -m unittest test_album_environments/integration/run_all_integration.py
 
 # Windows Tests
 
@@ -582,14 +582,14 @@ integration tests windows conda with mamba:
   extends: .windows_base_template_conda_with_mamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir https://gitlab.com/album-app/album/-/archive/$env:CI_COMMIT_REF_NAME/album-$env:CI_COMMIT_REF_NAME.zip 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_integration_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
+    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir https://gitlab.com/album-app/album/-/archive/$env:CI_COMMIT_REF_NAME/album-$env:CI_COMMIT_REF_NAME.zip 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; exit($lastexitcode)}
 
 
 integration tests windows micromamba:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album-environments 2>&1 | Write-Host; coverage run --omit .\test_album_environments\* -m unittest test_album_environments\integration\run_all_integration_micromamba.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "integration.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
+    - $cmnd = powershell.exe -command {micromamba activate album-environments 2>&1 | Write-Host; coverage run --omit .\test_album_environments\* -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "integration.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
   artifacts:
     paths:
       - integration.coverage
@@ -598,7 +598,7 @@ integration tests windows conda:
   extends: .windows_base_template_conda
   stage: test
   script:
-    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir https://gitlab.com/album-app/album/-/archive/$env:CI_COMMIT_REF_NAME/album-$env:CI_COMMIT_REF_NAME.zip 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_integration_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
+    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir https://gitlab.com/album-app/album/-/archive/$env:CI_COMMIT_REF_NAME/album-$env:CI_COMMIT_REF_NAME.zip 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; exit($lastexitcode)}
 
 # Create combined coverage reports
 

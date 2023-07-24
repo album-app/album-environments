@@ -494,7 +494,7 @@ integration tests linux micromamba:
   extends: .linux_base_template_micromamba
   stage: test
   script:
-    - coverage run --omit './test_album_environments/*' -m unittest test_album_environments/integration/run_all_integration_micromamba.py
+    - coverage run --omit './test_album_environments/*' -m unittest test_album_environments/integration/run_all_integration.py
     - coverage report
     - mv .coverage integration.coverage
   artifacts:
@@ -538,7 +538,7 @@ integration tests macos micromamba:
   extends: .macos_base_template_micromamba
   stage: test
   script:
-    - python -m unittest test_album_environments/integration/run_all_integration_micromamba.py
+    - python -m unittest test_album_environments/integration/run_all_integration.py
 
 integration tests macos conda:
   extends: .macos_base_template_conda

@@ -1,11 +1,13 @@
 
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 from album.environments.controller.micromamba_manager import MicromambaManager
+from album.environments.initialization import get_micromamba_path, init_micromamba_environment_handler
 from album.environments.model.environment import Environment
 
 
@@ -20,7 +22,7 @@ class TestMicromambaManager(unittest.TestCase):
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.micromamba = MicromambaManager("micromamba", self.test_base)
+        self.micromamba = init_micromamba_environment_handler(self.test_base).get_package_manager()
 
     def tearDown(self) -> None:
         if self.micromamba.environment_exists(self.test_environment_path):

@@ -115,15 +115,6 @@ class EnvironmentHandler(IEnvironmentHandler):
         return None
 
     @staticmethod
-    def get_installed_package_manager(default_micromamba_path, default_conda_path):
-        """Check which package manager is installed. Micromamba, conda using mamba or just conda. Picks them in this
-        order."""
-        if EnvironmentHandler.check_for_executable(default_micromamba_path):
-            return "micromamba"
-        elif EnvironmentHandler.check_for_executable(default_conda_path):
-            return "conda"
-
-    @staticmethod
     def check_for_executable(default_path):
         try:
             subprocess.run([default_path], capture_output=True)

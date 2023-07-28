@@ -1,12 +1,14 @@
 import time
 import unittest
 
+from test_album_environments.integration.environments import test_integration_env_creation
+
 
 def main():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
 
-    # suite.addTests(loader.loadTestsFromModule(test_integration_deploy))
+    suite.addTests(loader.loadTestsFromModule(test_integration_env_creation))
 
     runner = unittest.TextTestRunner(verbosity=3)
     result = runner.run(suite)

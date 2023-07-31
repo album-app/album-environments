@@ -552,7 +552,7 @@ unit tests windows micromamba:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --omit .\test\* -m unittest test_album_environments\unit\run_all_unit_micromamba.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "unit.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "unit_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
+    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --source=album.environments -m unittest test_album_environments\unit\run_all_unit_micromamba.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "unit.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "unit_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
   artifacts:
     paths:
       - unit.coverage
@@ -582,7 +582,7 @@ integration tests windows micromamba:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --omit .\test\* -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "integration.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
+    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --source=album.environments -m unittest test_album_environments\integration\run_all_integration.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "integration.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
   artifacts:
     paths:
       - integration.coverage

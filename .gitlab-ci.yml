@@ -198,7 +198,7 @@
 # Creates a album environment.
 #
 .linux_base_template_conda_with_mamba:
-  image: continuumio/miniconda3:latest
+  image: condaforge/mambaforge:latest
   tags:
     - docker
   before_script:
@@ -206,15 +206,11 @@
     - apt install git -y
     - python -V  # Print out python version for debugging
     - which python
-    - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
-    - conda init bash
-    - source ~/.bashrc
-    - conda install 'mamba<=1.4.5' -n base -c conda-forge
-    - conda update mamba -n base -c conda-forge
+    - mamba create -y --channel=conda-forge -n album-environments python=3.9
+    - source /opt/conda/bin/activate
     - conda activate album-environments
     - pip install .
     - which python
-    - conda activate album-environments
     - python -V
     - pip list
   variables:

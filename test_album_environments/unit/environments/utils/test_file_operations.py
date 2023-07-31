@@ -1,7 +1,5 @@
-import json
 import os
 import pathlib
-import platform
 import stat
 import tempfile
 import unittest.mock
@@ -10,21 +8,10 @@ from pathlib import Path
 from album.environments.utils.file_operations import (
     get_dict_from_yml,
     write_dict_to_yml,
-    create_empty_file_recursively,
     create_path_recursively,
-    write_dict_to_json,
     force_remove,
-    zip_folder,
-    unzip_archive,
     copy,
-    copy_folder,
-    zip_paths,
-    rand_folder_name,
-    folder_empty,
-    _next_free_pointer_number,
-    get_link_target,
-    construct_cache_link_target,
-    list_files_recursively,
+    copy_folder
 )
 
 
@@ -86,62 +73,6 @@ class TestFileOperations(unittest.TestCase):
             d = {"test": [1, 2, 3]}
             write_dict_to_yml(tmp_yml_file, d)
             self.assertTrue(tmp_yml_file.stat().st_size > 0)
-
-    def test_write_dict_to_json(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_folder = Path(tmp_dir)
-            tmp_json_file = tmp_folder.joinpath("test_yaml")
-            tmp_json_file.touch()
-            self.assertEqual(tmp_json_file.stat().st_size, 0)
-            d = {"test": [1, 2, 3]}
-            write_dict_to_json(tmp_json_file, d)
-            self.assertTrue(tmp_json_file.stat().st_size > 0)
-            d_loaded = json.load(open(tmp_json_file))
-            self.assertEqual(d_loaded, d)
-
-    def test_folder_empty(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_folder = Path(tmp_dir)
-    
-            self.assertTrue(folder_empty(tmp_folder.joinpath("myFolder")))
-            p = tmp_folder.joinpath("myFolder")
-            p.mkdir()
-            self.assertTrue(folder_empty(p))
-            p.joinpath("myfile.txt").touch()
-            self.assertFalse(folder_empty(p))
-
-    def test_create_empty_file_recursively(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_folder = Path(tmp_dir)
-            tmp_file = tmp_folder.joinpath(
-                "test_folder", "new_folder", "t.txt"
-            )
-    
-            create_empty_file_recursively(tmp_file)
-    
-            self.assertTrue(tmp_file.exists())
-            self.assertTrue(tmp_file.is_file())
-            self.assertTrue(tmp_file.parent.is_dir())
-            self.assertEqual(tmp_file.stat().st_size, 0)
-
-    def test_create_empty_file_recursively_no_overwrite(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_folder = Path(tmp_dir)
-
-            tmp_file = tmp_folder.joinpath("test_folder", "new_folder", "t.txt")
-    
-            create_empty_file_recursively(tmp_file)
-    
-            with open(tmp_file, "w") as f:
-                f.write("test")
-    
-            self.assertNotEqual(tmp_file.stat().st_size, 0)
-    
-            # create a file which already exists
-            create_empty_file_recursively(tmp_file)
-    
-            # content should still be the same!
-            self.assertNotEqual(tmp_file.stat().st_size, 0)
 
     def test_create_path_recursively(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -213,82 +144,6 @@ class TestFileOperations(unittest.TestCase):
             self.assertTrue(target_copy.joinpath("aFile.txt").exists())
             self.assertTrue(target_copy.joinpath("newname.txt").exists())
 
-    def test_zip_folder(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
-
-            source_dir = tmp_dir.joinpath("test_source_folder")
-            create_path_recursively(source_dir)
-    
-            tmp_file = source_dir.joinpath("aFile.txt")
-            tmp_file.touch()
-    
-            target_zip = tmp_dir.joinpath("test_target_folder", "anArchive.zip")
-    
-            # archive
-            zip_folder(source_dir, target_zip)
-    
-            self.assertTrue(target_zip.exists())
-
-    def test_zip_paths(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
-
-            source_dir = tmp_dir.joinpath("test_source_folder1")
-            create_path_recursively(source_dir)
-
-            source_dir2 = tmp_dir.joinpath("test_source_folder2")
-            create_path_recursively(source_dir2)
-
-            source_dir.joinpath("aFile.txt").touch()
-
-            tmp_file = source_dir2.joinpath("bFile.txt")
-            tmp_file.touch()
-
-            target_zip = tmp_dir.joinpath("test_target_folder", "anArchive.zip")
-
-            target_unzip = tmp_dir.joinpath("test_unzip_target_folder")
-            create_path_recursively(target_unzip)
-
-            # archive
-            r = zip_paths([source_dir, tmp_file], target_zip, tmp_dir=tmp_dir)
-            self.assertEqual(str(target_zip.absolute()), r)
-
-            # unzip
-            unzip_archive(target_zip, target_unzip)
-
-            # check
-            self.assertTrue(target_unzip.joinpath("test_source_folder1").exists())
-            self.assertTrue(
-                target_unzip.joinpath("test_source_folder1", "aFile.txt").exists()
-            )
-            self.assertTrue(target_unzip.joinpath("bFile.txt").exists())
-
-    def test_unzip_archive(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
-    
-            source_dir = tmp_dir.joinpath("test_source_folder")
-            create_path_recursively(source_dir)
-    
-            tmp_file = source_dir.joinpath("aFile.txt")
-            tmp_file.touch()
-    
-            target_zip = tmp_dir.joinpath("test_target_folder", "anArchive.zip")
-    
-            target_unzip = tmp_dir.joinpath("test_unzip_target_folder")
-            create_path_recursively(target_unzip)
-    
-            # archive
-            r = zip_folder(source_dir, target_zip)
-            self.assertEqual(str(target_zip), r)
-    
-            # unzip
-            unzip_archive(target_zip, target_unzip)
-    
-            # assert
-            self.assertTrue(target_unzip.joinpath("aFile.txt").exists())
-
     def test_force_remove_no_folder(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
@@ -316,93 +171,6 @@ class TestFileOperations(unittest.TestCase):
             os.chmod(p, stat.S_IWRITE)  # make write protected
 
             force_remove(p)  # should not fail
-
-    def test_rand_folder_name(self):
-        f1 = rand_folder_name()
-        f2 = rand_folder_name(f_len=10)
-
-        self.assertEqual(8, len(f1))
-        self.assertEqual(10, len(f2))
-
-    def test_list_files_recursively(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            p = Path(tmp_dir)
-            p.joinpath("a").mkdir()
-            p.joinpath("a", "myfileA").touch()
-            p.joinpath("a", "b").mkdir()
-            p.joinpath("a", "b", "myfileB").touch()
-
-            r = list_files_recursively(p, relative=False)
-
-            self.assertListEqual(
-                [p.joinpath("a", "b", "myfileB"), p.joinpath("a", "myfileA")], r
-            )
-
-    def test_list_files_recursively_relative(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            p = Path(tmp_dir)
-            p.joinpath("a").mkdir()
-            p.joinpath("a", "myfileA").touch()
-            p.joinpath("a", "b").mkdir()
-            p.joinpath("a", "b", "myfileB").touch()
-
-            r = list_files_recursively(p, relative=True)
-
-            self.assertListEqual(
-                [
-                    p.joinpath("a", "b", "myfileB").relative_to(p),
-                    p.joinpath("a", "myfileA").relative_to(p),
-                ],
-                r,
-            )
-
-    @unittest.skipIf(
-        platform.system().lower() == "windows",
-        "Linking in windows currently not tested!",
-    )
-    def test_construct_cache_link_target(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
-            point_from = tmp_dir.joinpath("point_from")
-    
-            # call
-            r = construct_cache_link_target(tmp_dir, point_from, "point_to")
-    
-            # assert
-            self.assertEqual(
-                tmp_dir.joinpath("point_to", "0").resolve(), r.resolve()
-            )
-
-    def test__next_free_pointer_number(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
-            p0 = Path(tmp_dir).joinpath("0")
-            p1 = Path(tmp_dir).joinpath("1")
-            p2isMissing = Path(tmp_dir).joinpath("3")
-
-            p0.mkdir()
-            p1.touch()
-            p2isMissing.mkdir()
-
-            r = _next_free_pointer_number(tmp_dir)
-
-            self.assertEqual("2", r)
-
-    @unittest.skipIf(
-        platform.system().lower() == "windows",
-        "Linking in windows currently not tested!",
-    )
-    def test_get_link_target(self):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
-            point_to = Path(tmp_dir).joinpath("point_to")
-            point_to.touch()
-
-            point_from = Path(tmp_dir).joinpath("point_from")
-
-            os.symlink(str(point_to), str(point_from))
-
-            self.assertEqual(point_to.resolve(), get_link_target(point_from).resolve())
 
     if __name__ == "__main__":
         unittest.main()

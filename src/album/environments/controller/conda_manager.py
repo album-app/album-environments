@@ -9,7 +9,6 @@ import yaml
 from album.environments.api.model.environment import IEnvironment
 from album.environments.utils import subcommand
 from album.environments.utils.file_operations import (
-    remove_link,
     force_remove,
 )
 from album.environments.utils.subcommand import SubProcessError

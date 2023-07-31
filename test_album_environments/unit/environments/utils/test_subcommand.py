@@ -163,42 +163,45 @@ class TestLogfileBuffer(unittest.TestCase):
 
     @unittest.skipIf(sys.platform == "darwin", "Multiprocessing broken for MACOS!")
     def test_multiprocessing(self):
-        capture_output1 = StringIO()
-        capture_output2 = StringIO()
-        thread1 = threading.Thread(
-            target=self.log_in_thread, args=("thread1", capture_output1)
-        )
-        thread2 = threading.Thread(
-            target=self.log_in_thread, args=("thread2", capture_output2)
-        )
+        for i in range(0, 10):
+            capture_output1 = StringIO()
+            capture_output2 = StringIO()
+            thread1 = threading.Thread(
+                target=self.log_in_thread, args=("thread1", capture_output1)
+            )
+            thread2 = threading.Thread(
+                target=self.log_in_thread, args=("thread2", capture_output2)
+            )
 
-        thread1.start()
-        thread2.start()
+            thread1.start()
+            thread2.start()
 
-        thread1.join()
-        thread2.join()
+            thread1_ident = thread1.ident
+            thread2_ident = thread2.ident
 
-        self.assertFalse(thread1.is_alive())
-        self.assertFalse(thread2.is_alive())
+            thread1.join()
+            thread2.join()
 
-        logger1 = get_active_logger_in_thread(thread1.ident)
-        logger2 = get_active_logger_in_thread(thread2.ident)
+            self.assertFalse(thread1.is_alive())
+            self.assertFalse(thread2.is_alive())
 
-        time.sleep(0.2)
+            logger1 = get_active_logger_in_thread(thread1_ident)
+            logger2 = get_active_logger_in_thread(thread2_ident)
 
-        self.assertIsNotNone(logger1)
-        self.assertIsNotNone(logger2)
-        self.assertNotEqual(logger1, get_active_logger())
-        self.assertNotEqual(logger2, get_active_logger())
-        self.assertNotEqual(logger1, logger2)
+            self.assertIsNotNone(logger1)
+            self.assertIsNotNone(logger2)
+            self.assertNotEqual(thread1_ident, thread2_ident)
+            self.assertNotEqual(logger1, get_active_logger())
+            self.assertNotEqual(logger2, get_active_logger())
+            self.assertNotEqual(logger1, logger2)
 
-        logs1 = self.as_list(capture_output1.getvalue())
-        logs2 = self.as_list(capture_output2.getvalue())
+            logs1 = self.as_list(capture_output1.getvalue())
+            logs2 = self.as_list(capture_output2.getvalue())
 
-        self.assertEqual(100, len(logs1))
-        self.assertEqual(100, len(logs2))
-        all(self.assertTrue(elem.startswith("thread1")) for elem in logs1)
-        all(self.assertTrue(elem.startswith("thread2")) for elem in logs2)
+            self.assertEqual(100, len(logs1))
+            self.assertEqual(100, len(logs2))
+            all(self.assertTrue(elem.startswith("thread1")) for elem in logs1)
+            all(self.assertTrue(elem.startswith("thread2")) for elem in logs2)
 
     def test_parse_log(self):
         log_buffer = LogfileBuffer(get_active_logger())
@@ -272,6 +275,7 @@ class TestLogfileBuffer(unittest.TestCase):
             log_buffer.write(
                 name + "_" + str(i) + "\n"
             )  # print, logger.info() should all end with a newline
+        time.sleep(0.1)
 
     def get_logs(self):
         return self.as_list(self.captured_output.getvalue())

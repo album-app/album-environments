@@ -341,8 +341,7 @@ prepare release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   tags:
-    - DeployRunner
-    - DeployDocker
+    - docker
   script:
     - echo "preparing release"
     - VERSION=$(cat setup.cfg | grep "version=*" | awk '{split($0, s, " "); print s[3]}')
@@ -364,8 +363,7 @@ gitlab release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   tags:
-    - DeployRunner
-    - DeployDocker
+    - docker
   needs:
     - job: prepare release
       artifacts: true
@@ -388,8 +386,7 @@ gitlab pypi deploy:
   image: python:latest
   stage: deploy
   tags:
-    - DeployRunner
-    - DeployDocker
+    - docker
   needs:
     - job: gitlab release
     - job: prepare release
@@ -410,8 +407,7 @@ pypi deploy:
   image: python:latest
   stage: deploy
   tags:
-    - DeployRunner
-    - DeployDocker
+    - docker
   needs:
     - job: gitlab release
     - job: prepare release
@@ -434,8 +430,7 @@ pypi deploy:
 docker deploy:
   stage: deploy
   tags:
-    - DeployRunner
-    - DeployShell
+    - docker
   needs:
     - job: gitlab release
     - job: prepare release

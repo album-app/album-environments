@@ -309,8 +309,7 @@
     - bash $tmpdir/miniconda.sh -b -p $tmpdir/miniconda
     - export PATH=$PATH:$tmpdir/miniconda/bin/
     - echo $PATH
-    - conda install 'mamba<=1.4.5' -n base -c conda-forge
-    - conda update mamba -n base -c conda-forge
+    - conda install mamba -n base -c conda-forge
     - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
     - source $tmpdir/miniconda/bin/activate
     - conda activate album-environments

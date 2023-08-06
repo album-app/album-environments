@@ -63,6 +63,7 @@
     - '$env:PATH += ";$pwd\miniconda\condabin"'     # set path information
     - '$env:PATH += ";$pwd\miniconda\Scripts"'
     - '$env:PATH += ";$pwd\miniconda\Library\bin"'
+    - 'ls env:'
     - '$conda_available = try {Get-Command "Get-CondaEnvironment" -errorAction Stop} catch {$null}'                                                                                                                                                                                                                                                                              # check if conda cmnd already available
     - 'if($force_install -eq "true") {$conda_available = $null}'                                                                                                                                                                                                                                                                                                                 # mark conda reinstall
     - 'if($conda_available -eq $null) {echo "conda cmnd not available! Will install in $pwd\miniconda..."; Start-Process .\download\miniconda3.exe -argumentlist "/InstallationType=JustMe /S /D=$pwd\miniconda" -wait} else {echo "Skip downloading!..."}'
@@ -143,6 +144,7 @@
     - micromamba activate album-environments
     - pip install .
     - python -V
+    - python -c "import shutil; print(shutil.which(\"micromamba\"))"
     - pip install coverage
     - pip list
   variables:
@@ -179,6 +181,7 @@
     - which python
     - conda activate album-environments
     - python -V
+    - python -c "import shutil; print(shutil.which(\"conda\"))"
     - pip list
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
@@ -212,6 +215,7 @@
     - pip install .
     - which python
     - python -V
+    - python -c "import shutil; print(shutil.which(\"mamba\"))"
     - pip list
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
@@ -251,6 +255,7 @@
     - micromamba activate album-environments
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
+    - python -c "import shutil; print(shutil.which(\"micromamba\"))"
     - pip list
   after_script:
     - tmpdir=$(</tmp/tmpdir)
@@ -281,6 +286,7 @@
     - conda activate album-environments
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
+    - python -c "import shutil; print(shutil.which(\"conda\"))"
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir
@@ -305,16 +311,16 @@
     - tmpdir=$(mktemp -d /tmp/album-environments-test.XXXXXX)
     - echo $tmpdir
     - echo $tmpdir > /tmp/tmpdir
-    - curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh --output $tmpdir/miniconda.sh
-    - bash $tmpdir/miniconda.sh -b -p $tmpdir/miniconda
-    - export PATH=$PATH:$tmpdir/miniconda/bin/
+    - curl https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-MacOSX-x86_64.sh --output $tmpdir/mamaforge.sh
+    - bash $tmpdir/mamaforge.sh -b -p $tmpdir/mamaforge
+    - export PATH=$PATH:$tmpdir/mamaforge/bin/
     - echo $PATH
-    - conda install mamba -n base -c conda-forge
     - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
     - source $tmpdir/miniconda/bin/activate
     - conda activate album-environments
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
+    - python -c "import shutil; print(shutil.which(\"mamba\"))"
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir

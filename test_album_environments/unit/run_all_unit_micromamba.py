@@ -8,7 +8,7 @@ from test_album_environments.unit.environments.controller import (
 from test_album_environments.unit.environments.model import (
     test_environment,
 )
-from test_album_environments.unit.environments.utils import test_subcommand
+from test_album_environments.unit.environments.utils import test_subcommand, test_conda_lock
 from test_album_environments.unit.environments.utils import (
     test_url_operations,
     test_file_operations,
@@ -25,6 +25,7 @@ def main():
     suite.addTests(loader.loadTestsFromModule(test_subcommand))
     suite.addTests(loader.loadTestsFromModule(test_file_operations))
     suite.addTests(loader.loadTestsFromModule(test_url_operations))
+    suite.addTests(loader.loadTestsFromModule(test_conda_lock))
 
     runner = unittest.TextTestRunner(verbosity=3)
     result = runner.run(suite)

@@ -1,17 +1,15 @@
-from album.environments.controller.conda_manager import CondaManager
-from album.runner import album_logging
-
-module_logger = album_logging.get_active_logger
 import os
 import sys
 from pathlib import Path
+
+from album.environments.controller.package_manager import PackageManager
 
 
 # TODO: Still has the conda executable of the CondaManager parent class. I don' like that, maybe create an extra package
 #  manager class from which every Manager(conda/mamba/micromamba) inherits
 
 
-class MicromambaManager(CondaManager):
+class MicromambaManager(PackageManager):
     """Class for handling micromamba environments.
 
     The micromamba class manages the environments a solution is supposed to run in. It provides all features necessary
@@ -23,27 +21,24 @@ class MicromambaManager(CondaManager):
     """
 
     def __init__(self, micromamba_executable, base_env_path):
-        super().__init__(None, base_env_path)
-        self._micromamba_executable = micromamba_executable
-
-    def _get_install_environment_executable(self):
-        return self._micromamba_executable
+        super().__init__(micromamba_executable, "micromamba", base_env_path)
 
     def get_active_environment_name(self):
-        """Returns the environment from the active album."""
+        """Returns the environment from the active environment."""
         environment_info = self.get_info()
         env_name = environment_info["environment"]
         env_name = env_name.rstrip(" (active)")
         return env_name
 
     def get_active_environment_path(self):
-        """Returns the environment for the active album."""
+        """Returns the environment for the active environment."""
         environment_info = self.get_info()
-        return environment_info["env location"]
+        path = environment_info["env location"]
+        return path
 
     def _get_env_create_args(self, env_file, env_prefix):
         subprocess_args = [
-            self._get_install_environment_executable(),
+            self.get_install_environment_executable(),
             "create",
             "-y",
             "--file",
@@ -60,7 +55,7 @@ class MicromambaManager(CondaManager):
             # COMES FIRST IN ENVIRONMENT VARIABLE "%PATH%". THUS, FULL PATH IS NECESSARY TO CALL
             # THE CORRECT PYTHON OR PIP! ToDo: keep track of this!
             subprocess_args = [
-                self._micromamba_executable,
+                self.get_install_environment_executable(),
                 "run",
                 "--prefix",
                 os.path.normpath(environment_path),
@@ -69,7 +64,7 @@ class MicromambaManager(CondaManager):
             ]
         else:
             subprocess_args = [
-                self._micromamba_executable,
+                self.get_install_environment_executable(),
                 "run",
                 "--prefix",
                 os.path.normpath(environment_path),
@@ -81,7 +76,7 @@ class MicromambaManager(CondaManager):
 
     def _get_remove_env_args(self, path):
         subprocess_args = [
-            self._get_install_environment_executable(),
+            self.get_install_environment_executable(),
             "remove",
             "-y",
             "-q",

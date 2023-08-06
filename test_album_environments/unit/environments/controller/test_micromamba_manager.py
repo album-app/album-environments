@@ -1,13 +1,11 @@
 
 import json
-import shutil
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from album.environments.controller.micromamba_manager import MicromambaManager
-from album.environments.initialization import get_micromamba_path, init_micromamba_environment_handler
+from album.environments.initialization import init_environment_handler
 from album.environments.model.environment import Environment
 
 
@@ -22,7 +20,7 @@ class TestMicromambaManager(unittest.TestCase):
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.micromamba = init_micromamba_environment_handler(self.test_base).get_package_manager()
+        self.micromamba = init_environment_handler(self.test_base).get_package_manager()
 
     def tearDown(self) -> None:
         if self.micromamba.environment_exists(self.test_environment_path):
@@ -46,7 +44,7 @@ class TestMicromambaManager(unittest.TestCase):
 
         self.assertListEqual(expected, res)
 
-    @patch("album.environments.controller.conda_manager.CondaManager.get_environment_list")
+    @patch("album.environments.controller.package_manager.PackageManager.get_environment_list")
     def test_environment_exists(self, ged_mock):
         target = self.test_base.joinpath("envName1")
         target_not_existing = self.test_base.joinpath("notExitendEnvs")
@@ -57,12 +55,12 @@ class TestMicromambaManager(unittest.TestCase):
         self.assertTrue(self.micromamba.environment_exists(target))
         self.assertFalse(self.micromamba.environment_exists(target_not_existing))
 
-    @patch("album.environments.controller.conda_manager.CondaManager.get_info")
+    @patch("album.environments.controller.package_manager.PackageManager.get_info")
     def test_get_active_environment_name(self, ginfo_mock):
         ginfo_mock.return_value = {"environment": "envName1"}
         self.assertEqual("envName1", self.micromamba.get_active_environment_name())
 
-    @patch("album.environments.controller.conda_manager.CondaManager.get_info")
+    @patch("album.environments.controller.package_manager.PackageManager.get_info")
     def test_get_active_environment_path(self, ginfo_mock):
         ginfo_mock.return_value = {"env location": "aEnvPath"}
         self.assertEqual("aEnvPath", str(self.micromamba.get_active_environment_path()))
@@ -153,7 +151,7 @@ dependencies:
         self.micromamba.remove_environment("iDoNotExist")
         run_mock.assert_called_once()
 
-    @patch("album.environments.controller.conda_manager.CondaManager.list_environment")
+    @patch("album.environments.controller.package_manager.PackageManager.list_environment")
     def test_is_installed(self, list_environment_mock):
         list_environment_mock.return_value = json.loads(
             """[
@@ -212,9 +210,9 @@ dependencies:
         create_mock.assert_called_once_with(environment, None)
         update_mock.assert_not_called()
 
-    @patch("album.environments.controller.conda_manager.CondaManager.create")
-    @patch("album.environments.controller.conda_manager.CondaManager.update")
-    @patch("album.environments.controller.conda_manager.CondaManager.environment_exists")
+    @patch("album.environments.controller.package_manager.PackageManager.create")
+    @patch("album.environments.controller.package_manager.PackageManager.update")
+    @patch("album.environments.controller.package_manager.PackageManager.environment_exists")
     def test_create_or_update_env_env_present(
             self, ex_env_mock, update_mock, create_mock
     ):
@@ -232,9 +230,9 @@ dependencies:
         # ToDo: implement
         pass
 
-    @patch("album.environments.controller.conda_manager.CondaManager.create_environment")
+    @patch("album.environments.controller.package_manager.PackageManager.create_environment")
     @patch(
-        "album.environments.controller.conda_manager.CondaManager.create_environment_from_file"
+        "album.environments.controller.package_manager.PackageManager.create_environment_from_file"
     )
     def test_create_valid_yaml(
             self, create_environment_from_file_mock, create_environment_mock
@@ -248,9 +246,9 @@ dependencies:
         )
         create_environment_mock.assert_not_called()
 
-    @patch("album.environments.controller.conda_manager.CondaManager.create_environment")
+    @patch("album.environments.controller.package_manager.PackageManager.create_environment")
     @patch(
-        "album.environments.controller.conda_manager.CondaManager.create_environment_from_file"
+        "album.environments.controller.package_manager.PackageManager.create_environment_from_file"
     )
     def test_create_no_yaml(
             self, create_environment_from_file_mock, create_environment_mock
@@ -262,7 +260,7 @@ dependencies:
         create_environment_from_file_mock.assert_not_called()
 
     @patch(
-        "album.environments.controller.conda_manager.CondaManager.create_or_update_env",
+        "album.environments.controller.package_manager.PackageManager.create_or_update_env",
         return_value="Called",
     )
     def test_install(self, create_mock):

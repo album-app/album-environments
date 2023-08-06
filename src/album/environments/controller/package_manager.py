@@ -5,7 +5,6 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 
 import yaml
-from packaging import version
 
 from album.environments.api.model.environment import IEnvironment
 from album.environments.utils import subcommand

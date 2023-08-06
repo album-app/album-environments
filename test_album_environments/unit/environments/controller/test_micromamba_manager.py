@@ -1,5 +1,6 @@
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -20,7 +21,7 @@ class TestMicromambaManager(unittest.TestCase):
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.micromamba = init_environment_handler(self.test_base).get_package_manager()
+        self.micromamba = init_environment_handler(self.test_base, micromamba_path=os.getenv("ALBUM_MICROMAMBA_PATH")).get_package_manager()
 
     def tearDown(self) -> None:
         if self.micromamba.environment_exists(self.test_environment_path):

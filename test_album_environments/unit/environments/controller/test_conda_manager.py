@@ -19,7 +19,7 @@ class TestCondaManager(unittest.TestCase):
         self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
         self.tmp_dir = Path(tempfile.TemporaryDirectory().name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.conda = CondaManager(conda_executable, self.test_base)
+        self.conda = CondaManager(conda_executable, base_env_path=self.test_base)
 
     def tearDown(self) -> None:
         if self.conda.environment_exists(self.test_environment_path):

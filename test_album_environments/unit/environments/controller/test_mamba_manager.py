@@ -13,7 +13,6 @@ class TestMambaManager(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        conda_executable = "conda"
         mamba_executable = "mamba"
         self.test_base_dir = tempfile.TemporaryDirectory()
         self.test_base = Path(self.test_base_dir.name)
@@ -21,7 +20,7 @@ class TestMambaManager(unittest.TestCase):
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.mamba = MambaManager(conda_executable, mamba_executable, self.test_base)
+        self.mamba = MambaManager(mamba_executable, base_env_path=self.test_base)
 
     def tearDown(self) -> None:
         if self.mamba.environment_exists(self.test_environment_path):

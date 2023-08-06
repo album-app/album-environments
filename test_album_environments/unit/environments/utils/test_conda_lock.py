@@ -1,11 +1,13 @@
+import shutil
+import tempfile
+import unittest
 from pathlib import Path
 
 from album.environments.utils.conda_lock import create_conda_lock_file
 from album.environments.utils.file_operations import write_dict_to_yml
-from test.unit.test_unit_core_common import TestUnitCoreCommon
 
 
-class TestCondaLock(TestUnitCoreCommon):
+class TestCondaLock(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
@@ -20,16 +22,22 @@ class TestCondaLock(TestUnitCoreCommon):
             "channels": ["conda-forge"],
             "dependencies": ["python"]
         }
-        yml_path = Path(self.tmp_dir.name).joinpath("test.yml")
-        write_dict_to_yml(
-            yml_path, yml_dict
-        )
 
-        # call
-        lock_file = create_conda_lock_file(yml_path, self.album_controller.environment_manager().get_environment_handler().get_conda_lock_manager().conda_lock_executable())
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_folder = Path(tmp_dir)
+            yml_path = tmp_folder.joinpath("test.yml")
+            write_dict_to_yml(
+                yml_path, yml_dict
+            )
 
-        # assert
-        self.assertTrue(lock_file.is_file())
-        self.assertEqual("solution.conda-lock.yml", lock_file.name)
-        self.assertEqual(yml_path.parent, lock_file.parent)
-        self.assertNotEqual(lock_file.stat().st_size, 0)
+            # call
+            conda_lock_path = shutil.which("conda-lock")
+            self.assertIsNotNone(conda_lock_path)
+            conda_lock_path = Path(conda_lock_path)
+            lock_file = create_conda_lock_file(yml_path, conda_lock_path)
+
+            # assert
+            self.assertTrue(lock_file.is_file())
+            self.assertEqual("solution.conda-lock.yml", lock_file.name)
+            self.assertEqual(yml_path.parent, lock_file.parent)
+            self.assertNotEqual(lock_file.stat().st_size, 0)

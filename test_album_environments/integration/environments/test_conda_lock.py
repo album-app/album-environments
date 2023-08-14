@@ -5,9 +5,10 @@ from pathlib import Path
 
 from album.environments.utils.conda_lock import create_conda_lock_file
 from album.environments.utils.file_operations import write_dict_to_yml
+from test_album_environments.test_common import TestCommon
 
 
-class TestCondaLock(unittest.TestCase):
+class TestCondaLock(TestCommon):
 
     def setUp(self):
         super().setUp()

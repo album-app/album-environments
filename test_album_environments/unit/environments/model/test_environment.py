@@ -1,10 +1,10 @@
 import unittest.suite
-from unittest.mock import patch
 
 from album.environments.model.environment import Environment
+from test_album_environments.test_common import TestCommon
 
 
-class TestEnvironment(unittest.TestCase):
+class TestEnvironment(TestCommon):
     test_environment_name = "unittest"
 
     def setUp(self):

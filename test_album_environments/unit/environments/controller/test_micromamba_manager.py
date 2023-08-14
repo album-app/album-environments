@@ -8,9 +8,10 @@ from unittest.mock import patch, MagicMock
 
 from album.environments.initialization import init_environment_handler
 from album.environments.model.environment import Environment
+from test_album_environments.test_common import TestCommon
 
 
-class TestMicromambaManager(unittest.TestCase):
+class TestMicromambaManager(TestCommon):
     test_environment_name = "unittest"
 
     def setUp(self):

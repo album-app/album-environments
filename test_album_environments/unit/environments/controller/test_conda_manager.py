@@ -6,9 +6,10 @@ from unittest.mock import patch, MagicMock
 
 from album.environments.controller.conda_manager import CondaManager
 from album.environments.model.environment import Environment
+from test_album_environments.test_common import TestCommon
 
 
-class TestCondaManager(unittest.TestCase):
+class TestCondaManager(TestCommon):
     test_environment_name = "unittest"
 
     def setUp(self):

@@ -7,9 +7,10 @@ from album.environments.utils.url_operations import (
     download_resource,
     _request_get
 )
+from test_album_environments.test_common import TestCommon
 
 
-class TestUrlOperations(unittest.TestCase):
+class TestUrlOperations(TestCommon):
     def setUp(self) -> None:
         super().setUp()
         self.downloadable_url = "https://www.google.com/favicon.ico"

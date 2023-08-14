@@ -13,9 +13,10 @@ from album.environments.utils.file_operations import (
     copy,
     copy_folder
 )
+from test_album_environments.test_common import TestCommon
 
 
-class TestFileOperations(unittest.TestCase):
+class TestFileOperations(TestCommon):
     def setUp(self):
         super().setUp()
         self.set_dummy_solution_path()

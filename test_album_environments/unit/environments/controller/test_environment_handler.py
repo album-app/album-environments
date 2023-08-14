@@ -1,9 +1,10 @@
 import unittest.mock
 
 from album.environments.controller.environment_handler import EnvironmentHandler
+from test_album_environments.test_common import TestCommon
 
 
-class TestEnvironmentManager(unittest.TestCase):
+class TestEnvironmentManager(TestCommon):
     def setUp(self):
         super().setUp()
         #FIXME

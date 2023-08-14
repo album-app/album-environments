@@ -6,9 +6,10 @@ from unittest.mock import patch, MagicMock
 
 from album.environments.controller.mamba_manager import MambaManager
 from album.environments.model.environment import Environment
+from test_album_environments.test_common import TestCommon
 
 
-class TestMambaManager(unittest.TestCase):
+class TestMambaManager(TestCommon):
     test_environment_name = "unittest"
 
     def setUp(self):

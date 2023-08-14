@@ -3,6 +3,7 @@ import platform
 import shutil
 from pathlib import Path
 
+from album.environments.api.controller.environment_handler import IEnvironmentHandler
 from album.environments.controller.conda_lock_manager import CondaLockManager
 from album.environments.controller.conda_manager import CondaManager
 from album.environments.controller.environment_handler import EnvironmentHandler
@@ -78,11 +79,11 @@ class PackageManagerDetector:
 
     def create_package_manager(self, base_env_path):
         if self._micromamba_executable:
-            return MicromambaManager(self._micromamba_executable, base_env_path)
+            return MicromambaManager(self._micromamba_executable, base_env_path=base_env_path)
         elif self._mamba_executable:
-            return MambaManager(self._mamba_executable, base_env_path)
+            return MambaManager(self._mamba_executable, base_env_path=base_env_path)
         else:
-            return CondaManager(self._conda_executable, base_env_path)
+            return CondaManager(self._conda_executable, base_env_path=base_env_path)
 
     def get_conda_lock_manager(self):
         return self._conda_lock_manager
@@ -91,7 +92,7 @@ class PackageManagerDetector:
         return self._package_manager
 
 
-def init_environment_handler(env_base_path, micromamba_path=None, conda_path=None, mamba_path=None, conda_lock_path=None):
+def init_environment_handler(env_base_path, micromamba_path=None, conda_path=None, mamba_path=None, conda_lock_path=None) -> IEnvironmentHandler:
     package_manager_detector = PackageManagerDetector(env_base_path, micromamba_path, mamba_path, conda_path, conda_lock_path)
     package_manager = package_manager_detector.get_package_manager()
     conda_lock_manager = package_manager_detector.get_conda_lock_manager()

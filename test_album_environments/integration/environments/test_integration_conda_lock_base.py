@@ -1,22 +1,33 @@
 import shutil
 import tempfile
-import unittest
 from pathlib import Path
 
-from album.environments.utils.conda_lock import create_conda_lock_file
 from album.environments.utils.file_operations import write_dict_to_yml
 from test_album_environments.test_common import TestCommon
 
 
-class TestCondaLock(TestCommon):
+class _TestIntegrationCondaLock(TestCommon):
 
     def setUp(self):
         super().setUp()
+        self.tmp_dir_obj = tempfile.TemporaryDirectory()
+        self.test_base = Path(self.tmp_dir_obj.name)
+        self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
+        self.tmp_dir = Path(tempfile.TemporaryDirectory().name)
+        self.tmp_dir.mkdir(parents=True, exist_ok=True)
+        self.env_handler = self.init_env_handler()
 
-    def tearDown(self):
+    def init_env_handler(self):
+        raise NotImplementedError()
+
+    def tearDown(self) -> None:
+        if self.env_handler.get_package_manager().environment_exists(self.test_environment_path):
+            self.env_handler.get_package_manager().remove_environment(self.test_environment_path)
+            self.assertFalse(self.env_handler.get_package_manager().environment_exists(self.test_environment_path))
+        self.tmp_dir_obj.cleanup()
         super().tearDown()
 
-    def test_create_conda_lockfile(self):
+    def create_conda_lockfile(self):
         # prepare
         yml_dict = {
             "name": "t",
@@ -35,7 +46,7 @@ class TestCondaLock(TestCommon):
             conda_lock_path = shutil.which("conda-lock")
             self.assertIsNotNone(conda_lock_path)
             conda_lock_path = Path(conda_lock_path)
-            lock_file = create_conda_lock_file(yml_path, conda_lock_path)
+            lock_file = self.env_handler.get_conda_lock_manager().create_conda_lock_file(yml_path, conda_lock_path)
 
             # assert
             self.assertTrue(lock_file.is_file())

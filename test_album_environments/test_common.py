@@ -8,6 +8,8 @@ from test_album_environments.global_exception_watcher import GlobalExceptionWatc
 
 
 class TestCommon(unittest.TestCase):
+    test_environment_name = "unittest"
+
     def setUp(self) -> None:
         super().setUp()
         self.logger = get_active_logger()

@@ -134,9 +134,9 @@ class EnvironmentHandler(IEnvironmentHandler):
             return str(Path(conda_path).joinpath("Scripts", "conda.exe"))
 
     def create_environment_prefer_lock_file(self, environment, solution_lock_file):
+        solution_lock_file = Path(solution_lock_file)
         if solution_lock_file.is_file() and self._conda_lock_manager._conda_lock_executable is not None:
             get_active_logger().debug("Creating solution environment from lock file.")
-            self._conda_lock_manager.create_environment_from_lockfile(solution_lock_file,
-                                                                                          environment.name())
+            self._conda_lock_manager.create_environment_from_lockfile(solution_lock_file, environment.name())
         else:
             self._package_manager.install(environment)

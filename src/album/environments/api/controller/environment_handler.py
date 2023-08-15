@@ -9,6 +9,10 @@ class IEnvironmentHandler:
     __metaclass__ = ABCMeta
 
     @abstractmethod
+    def create_environment_prefer_lock_file(self, environment, solution_lock_file):
+        raise NotImplementedError
+
+    @abstractmethod
     def install_environment(
         self, environment: IEnvironment, default_python_version
     ) -> IEnvironment:

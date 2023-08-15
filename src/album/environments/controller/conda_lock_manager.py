@@ -68,7 +68,7 @@ class CondaLockManager:
         """Returns the arguments for the conda-lock install subprocess unsing the installed package manager"""
         args = [str(self._conda_lock_executable), "install", "-p", str(env_prefix)]
         args.extend(self._append_package_manager_choice_args())
-        args.append(lock_file)
+        args.append(str(lock_file))
         return args
 
     def _append_package_manager_choice_args(self):

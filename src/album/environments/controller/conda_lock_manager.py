@@ -40,9 +40,10 @@ class CondaLockManager:
         subcommand.run(conda_lock_args)
         return solution_lock_path
 
-    def create_environment_from_lockfile(self, conda_lock_file: Path, environment_path):
+    def create_environment_from_lockfile(self, conda_lock_file: Path, environment_path: Path):
         """Create a conda environment from a conda lock file. If the environment already exists,
         it will be removed first."""
+        environment_path = Path(environment_path)
         if self._package_manager.environment_exists(environment_path):
             get_active_logger().debug("Environment already exists, removing it first...")
             self._package_manager.remove_environment(environment_path)

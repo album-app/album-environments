@@ -312,7 +312,7 @@ class PackageManager:
 
     def create_or_update_env(self, environment: IEnvironment, default_python_version: str = default_python_version):
         """Creates or updates the environment"""
-        if self.environment_exists(environment.name()):
+        if self.environment_exists(environment.path()):
             self.update(environment)
         else:
             self.create(environment, default_python_version)

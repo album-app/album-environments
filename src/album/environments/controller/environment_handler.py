@@ -29,7 +29,7 @@ class EnvironmentHandler(IEnvironmentHandler):
 
     def remove_environment(self, environment: IEnvironment) -> bool:
         """Removes an environment."""
-        res = self._package_manager.remove_environment(environment.name())
+        res = self._package_manager.remove_environment(environment.path())
         return res
 
     def run_script(
@@ -137,6 +137,6 @@ class EnvironmentHandler(IEnvironmentHandler):
         solution_lock_file = Path(solution_lock_file)
         if solution_lock_file.is_file() and self._conda_lock_manager._conda_lock_executable is not None:
             get_active_logger().debug("Creating solution environment from lock file.")
-            self._conda_lock_manager.create_environment_from_lockfile(solution_lock_file, environment.name())
+            self._conda_lock_manager.create_environment_from_lockfile(solution_lock_file, environment.path())
         else:
             self._package_manager.install(environment)

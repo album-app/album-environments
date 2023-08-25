@@ -21,9 +21,9 @@ class _TestIntegrationCondaLock(TestCommon):
         raise NotImplementedError()
 
     def tearDown(self) -> None:
-        if self.env_handler.get_package_manager().environment_exists(self.test_environment_path):
-            self.env_handler.get_package_manager().remove_environment(self.test_environment_path)
-            self.assertFalse(self.env_handler.get_package_manager().environment_exists(self.test_environment_path))
+        if self.env_handler.get_package_manager_name().environment_exists(self.test_environment_path):
+            self.env_handler.get_package_manager_name().remove_environment(self.test_environment_path)
+            self.assertFalse(self.env_handler.get_package_manager_name().environment_exists(self.test_environment_path))
         self.tmp_dir_obj.cleanup()
         super().tearDown()
 

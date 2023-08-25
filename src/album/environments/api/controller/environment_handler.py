@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.model.environment import IEnvironment
 
 
@@ -49,7 +50,7 @@ class IEnvironmentHandler:
         raise NotImplementedError
 
     @abstractmethod
-    def get_package_manager(self):
+    def get_package_manager(self) -> IPackageManager:
         raise NotImplementedError
 
     @abstractmethod

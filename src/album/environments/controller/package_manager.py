@@ -1,11 +1,12 @@
 import json
 import os
 import tempfile
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from pathlib import Path
 
 import yaml
 
+from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.model.environment import IEnvironment
 from album.environments.utils import subcommand
 from album.environments.utils.file_operations import (
@@ -17,47 +18,22 @@ from album.runner import album_logging
 module_logger = album_logging.get_active_logger
 
 
-class PackageManager:
+class PackageManager(IPackageManager):
     """Parent class for all package managers, like Conda, Mamba, Micromamba, etc."""
 
     __metaclass__ = ABCMeta
     default_python_version = "3.10"
 
-    def __init__(self, install_executable, package_manager, base_env_path):
+    def __init__(self, install_executable, package_manager_name, base_env_path):
         self._install_env_executable = install_executable
-        self._package_manager = package_manager
+        self._package_manager_name = package_manager_name
         self._base_env_path = base_env_path
 
     def get_install_environment_executable(self):
         return self._install_env_executable
 
-    def get_package_manager(self):
-        return self._package_manager
-
-    @abstractmethod
-    def get_active_environment_name(self):
-        """Returns the environment from the active album. Implemented in Child classes"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_active_environment_path(self):
-        """Returns the environment for the active album. Implemented in Child classes"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def _get_env_create_args(self, env_file, env_prefix):
-        """Returns the arguments for the environment creation command. Implemented in Child classes"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def _get_run_script_args(self, environment_path, script_full_path):
-        """Returns the arguments for a conda run in solution env call. Implemented in Child classes"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def _get_remove_env_args(self, path):
-        """Returns the arguments for the environment removal command. Implemented in Child classes"""
-        raise NotImplementedError
+    def get_package_manager_name(self):
+        return self._package_manager_name
 
     def get_environment_list(self):
         """Returns the available album conda environments."""

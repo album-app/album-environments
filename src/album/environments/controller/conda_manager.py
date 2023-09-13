@@ -19,8 +19,8 @@ class CondaManager(PackageManager):
 
     """
 
-    def __init__(self, install_executable, package_manager="conda", base_env_path=None):
-        super().__init__(install_executable, package_manager, base_env_path)
+    def __init__(self, install_executable, package_manager_name="conda", base_env_path=None):
+        super().__init__(install_executable, package_manager_name, base_env_path)
 
     def get_active_environment_name(self):
         """Returns the environment from the active album."""

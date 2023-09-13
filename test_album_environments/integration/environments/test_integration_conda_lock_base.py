@@ -2,6 +2,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from album.environments.api.controller.environment_handler import IEnvironmentHandler
 from album.environments.utils.file_operations import write_dict_to_yml
 from test_album_environments.test_common import TestCommon
 
@@ -17,7 +18,7 @@ class _TestIntegrationCondaLock(TestCommon):
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
         self.env_handler = self.init_env_handler()
 
-    def init_env_handler(self):
+    def init_env_handler(self) -> IEnvironmentHandler:
         raise NotImplementedError()
 
     def tearDown(self) -> None:

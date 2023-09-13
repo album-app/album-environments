@@ -73,9 +73,9 @@ class CondaLockManager:
         return args
 
     def _append_package_manager_choice_args(self):
-        if self._package_manager.get_package_manager() == "micromamba":
+        if self._package_manager.get_package_manager_name() == "micromamba":
             return self._get_install_args_micromamba()
-        elif self._package_manager.get_package_manager() == "mamba":
+        elif self._package_manager.get_package_manager_name() == "mamba":
             return self._get_install_args_mamba()
         else:
             return self._get_install_args_conda()

@@ -211,6 +211,7 @@ def _run_process(command, log: LogProcessing, pipe_output, env):
             stderr=subprocess.STDOUT,
             env=env,
             text=True,
+            encoding=sys.getfilesystemencoding()
         )
         while True:
             output = process.stdout.readline()
@@ -224,7 +225,7 @@ def _run_process(command, log: LogProcessing, pipe_output, env):
             raise SubProcessError(rc, "ERROR while running %s" % " ".join(command))
         return rc
     else:
-        return subprocess.run(command, env=env)
+        return subprocess.run(command, env=env, encoding=sys.getfilesystemencoding())
 
 
 def check_output(command, env=None):

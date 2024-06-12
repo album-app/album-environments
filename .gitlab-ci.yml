@@ -64,7 +64,6 @@
     - '$env:PATH += ";$pwd\miniconda\condabin"'     # set path information
     - '$env:PATH += ";$pwd\miniconda\Scripts"'
     - '$env:PATH += ";$pwd\miniconda\Library\bin"'
-    - 'ls env:'
     - '$conda_available = try {Get-Command "Get-CondaEnvironment" -errorAction Stop} catch {$null}'                                                                                                                                                                                                                                                                              # check if conda cmnd already available
     - 'if($force_install -eq "true") {$conda_available = $null}'                                                                                                                                                                                                                                                                                                                 # mark conda reinstall
     - 'if($conda_available -eq $null) {echo "conda cmnd not available! Will install in $pwd\miniconda..."; Start-Process .\download\miniconda3.exe -argumentlist "/InstallationType=JustMe /S /D=$pwd\miniconda" -wait} else {echo "Skip downloading!..."}'

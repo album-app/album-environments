@@ -76,15 +76,22 @@ class TestMambaManager(TestCommon):
 
         self.assertIsNotNone(r)
 
-    def test_create_environment_from_file_valid_file(self):
+    @patch("album.environments.controller.conda_manager.CondaManager._install")
+    def test_create_environment_from_file_valid_file(self, install_mock):
         self.assertFalse(self.mamba.environment_exists(self.test_environment_path))
-        env_file = """{}"""
+        env_file = """
+name: unittest
+channels:
+  - conda-forge
+dependencies:
+  - python
+"""
         with open(self.tmp_dir.joinpath("env_file.yml"), "w") as f:
             f.writelines(env_file)
         self.mamba.create_environment_from_file(
             self.tmp_dir.joinpath("env_file.yml"), self.test_environment_path
         )
-        self.assertTrue(self.mamba.environment_exists(self.test_environment_path))
+        self.assertEqual(1, install_mock.call_count)
 
     def test_create_environment_from_file_invalid(self):
         # wrong file ending

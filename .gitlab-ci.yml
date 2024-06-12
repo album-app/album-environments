@@ -39,6 +39,7 @@
 
   tags:
     - windows
+    - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
     ErrorActionPreference: Continue  # not working properly
@@ -74,7 +75,7 @@
     - '$progressPreference = $oldProgressPreference'
   tags:
     - windows
-    - mdc
+    - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
     ErrorActionPreference: Continue  # not working properly
@@ -110,6 +111,7 @@
     - '$progressPreference = $oldProgressPreference'
   tags:
     - windows
+    - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
     ErrorActionPreference: Continue  # not working properly
@@ -303,8 +305,6 @@
   tags:
     - macos
     - shell
-    - mdc
-    - mitte
   before_script:
     - echo "$(uname)"
     - sw_vers

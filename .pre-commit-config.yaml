@@ -11,6 +11,12 @@ repos:
     hooks:
       - id: mypy
         exclude: ^test_album_environments/
+        args:
+          [
+            --disallow-untyped-defs,
+            --disallow-incomplete-defs,
+            --disallow-untyped-calls,
+          ]
         additional_dependencies:
           - "types-requests"
           - "types-PyYAML"

@@ -1,25 +1,23 @@
 import json
 import os
 import tempfile
-from abc import ABCMeta
+from abc import ABC, ABCMeta
 from pathlib import Path
+from typing import Dict, List, Optional
 
 import yaml
+from album.runner import album_logging
 
 from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.model.environment import IEnvironment
 from album.environments.utils import subcommand
-from album.environments.utils.file_operations import (
-    force_remove,
-)
+from album.environments.utils.file_operations import force_remove
 from album.environments.utils.subcommand import SubProcessError
-from album.runner import album_logging
 
 module_logger = album_logging.get_active_logger
 
 
-class PackageManager(IPackageManager):
-    """Parent class for all package managers, like Conda, Mamba, Micromamba, etc."""
+class PackageManager(IPackageManager, ABC):
 
     __metaclass__ = ABCMeta
     default_python_version = "3.10"
@@ -35,8 +33,7 @@ class PackageManager(IPackageManager):
     def get_package_manager_name(self):
         return self._package_manager_name
 
-    def get_environment_list(self):
-        """Returns the available album conda environments."""
+    def get_environment_list(self) -> List[Path]:
         if Path(self._base_env_path).exists():
             return sorted(self._get_immediate_subdirectories(self._base_env_path))
         else:
@@ -44,23 +41,13 @@ class PackageManager(IPackageManager):
 
     @staticmethod
     def _get_immediate_subdirectories(a_dir: Path):
-        """Returns a list of all subdirectories of a given directory."""
         return [
             a_dir.joinpath(name).resolve()
             for name in os.listdir(str(a_dir))
             if os.path.isdir(os.path.join(str(a_dir), name))
         ]
 
-    def environment_exists(self, environment_path):
-        """Checks whether an environment already exists or not.
-
-        Args:
-            environment_path:
-                The path of an environment.
-
-        Returns:
-            True when environment exists else false.
-        """
+    def environment_exists(self, environment_path: str) -> bool:
         environment_list = self.get_environment_list()
         environment_path = Path(environment_path)
 
@@ -68,23 +55,14 @@ class PackageManager(IPackageManager):
             True
             if (
                 environment_path
-                and environment_path.resolve() in [env.resolve() for env in environment_list]
+                and environment_path.resolve()
+                in [env.resolve() for env in environment_list]
                 and os.listdir(environment_path)
             )
             else False
         )
 
     def remove_environment(self, environment_path) -> bool:
-        """Removes an environment given its path. Does nothing when environment does not exist.
-
-        Args:
-            environment_path:
-                The path of the environment to remove
-
-        Returns:
-            True, when removal succeeded, else False
-
-        """
         if self.get_active_environment_path() == environment_path:
             module_logger().warning("Cannot remove active environment! Skipping...")
             return False
@@ -103,26 +81,12 @@ class PackageManager(IPackageManager):
         force_remove(environment_path)
         return True
 
-    def get_info(self):
-        """Get the info of the conda installation on the corresponding system.
-
-        Returns:
-            dictionary corresponding to conda info.
-        """
+    def get_info(self) -> Dict[str, str]:
         subprocess_args = [self.get_install_environment_executable(), "info", "--json"]
         output = subcommand.check_output(subprocess_args)
         return json.loads(output)
 
-    def list_environment(self, environment_path):
-        """Lists all available conda installation in the given environment.
-
-        Args:
-            environment_path:
-                The prefix of the environment to list.
-
-        Returns:
-            dictionary containing the available packages in the given conda environment.
-        """
+    def list_environment(self, environment_path) -> Dict[str, str]:
         subprocess_args = [
             self.get_install_environment_executable(),
             "list",
@@ -133,29 +97,20 @@ class PackageManager(IPackageManager):
         output = subcommand.check_output(subprocess_args)
         return json.loads(output)
 
-    def create_environment(self, environment_path, python_version=default_python_version, force=False):
-        """Creates a conda environment with python (latest version) installed.
-
-        Args:
-            environment_path:
-                The desired environment path.
-            python_version:
-                The python version to be installed into the environment
-            force:
-                If True, force creates the environment by deleting the old one.
-
-        Raises:
-            RuntimeError:
-                When the environment could not be created due to whatever reasons.
-
-        """
-
+    def create_environment(
+        self,
+        environment_path: str,
+        python_version: Optional[str] = default_python_version,
+        force: bool = False,
+    ):
         env_exists = self.environment_exists(environment_path)
         if force and env_exists:
             self.remove_environment(environment_path)
         else:
             if env_exists:
-                raise EnvironmentError("Environment with name %s already exists!" % environment_path)
+                raise OSError(
+                    "Environment with name %s already exists!" % environment_path
+                )
 
             env_content = {
                 "channels": ["defaults"],
@@ -163,24 +118,7 @@ class PackageManager(IPackageManager):
             }
             self._install(environment_path, env_content)
 
-    def create_environment_from_file(self, yaml_path, environment_path):
-        """Creates a conda environment given a path to a yaml file and its path.
-
-        Args:
-            yaml_path:
-                The path to the file.
-            environment_path:
-                The path of the environment.
-
-        Raises:
-            NameError:
-                When the file has the wrong format according to its extension.
-            ValueError:
-                When the file is unreadable or empty.
-            RuntimeError:
-                When the environment could not be created due to whatever reasons.
-
-        """
+    def create_environment_from_file(self, yaml_path: str, environment_path: str):
         if self.environment_exists(environment_path):
             self.remove_environment(environment_path)
 
@@ -192,16 +130,18 @@ class PackageManager(IPackageManager):
         if not (yaml_path.is_file() and yaml_path.stat().st_size > 0):
             raise ValueError("File not a valid yml file!")
 
-        with open(yaml_path, "r") as f:
+        with open(yaml_path) as f:
             content = yaml.safe_load(f)
 
         self._install(environment_path, content)
 
-    def _install(self, environment_path, environment_content):
+    def _install(self, environment_path: str, environment_content: str):
         env_prefix = os.path.normpath(environment_path)
         force_remove(env_prefix)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yml") as env_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yml"
+        ) as env_file:
             env_file.write(yaml.safe_dump(environment_content))
         subprocess_args = self._get_env_create_args(env_file, env_prefix)
         try:
@@ -223,22 +163,8 @@ class PackageManager(IPackageManager):
         argv=None,
         pipe_output=True,
     ):
-        """Runs the solution in the target environment
-
-        Args:
-            script:
-                Script calling the solution
-            environment:
-                The virtual environment used to run the script
-            environment_variables:
-                The environment variables to attach to the script process
-            argv:
-                The arguments to attach to the script process
-            pipe_output:
-                Indicates whether to pipe the output of the subprocess or just return it as is.
-        """
         if not environment.path():
-            raise EnvironmentError(
+            raise OSError(
                 "Could not find environment %s. Is the solution installed?"
                 % environment.name()
             )
@@ -252,8 +178,9 @@ class PackageManager(IPackageManager):
             subprocess_args, pipe_output=pipe_output, env=environment_variables
         )
 
-    def is_installed(self, environment_path: str, package_name, min_package_version=None):
-        """Checks if package is installed in a certain version."""
+    def is_installed(
+        self, environment_path: str, package_name, min_package_version=None
+    ) -> bool:
         conda_list = self.list_environment(environment_path)
 
         for package in conda_list:
@@ -286,27 +213,39 @@ class PackageManager(IPackageManager):
 
         return False
 
-    def create_or_update_env(self, environment: IEnvironment, default_python_version: str = default_python_version):
-        """Creates or updates the environment"""
+    def create_or_update_env(
+        self,
+        environment: IEnvironment,
+        default_python_version: Optional[str] = default_python_version,
+    ):
         if self.environment_exists(environment.path()):
             self.update(environment)
         else:
             self.create(environment, default_python_version)
 
-    def create(self, environment: IEnvironment, default_python_version: str = default_python_version):
-        """Creates environment a solution runs in."""
+    def create(
+        self,
+        environment: IEnvironment,
+        default_python_version: Optional[str] = default_python_version,
+    ):
 
         if environment.yaml_file():
-            self.create_environment_from_file(environment.yaml_file(), environment.path())
+            self.create_environment_from_file(
+                environment.yaml_file(), environment.path()
+            )
         else:
-            module_logger().warning("No yaml file specified. Creating Environment without dependencies!")
+            module_logger().warning(
+                "No yaml file specified. Creating Environment without dependencies!"
+            )
             self.create_environment(environment.path(), default_python_version)
 
     def update(self, environment: IEnvironment):
-        """Updates the environment"""
         module_logger().debug("Skip installing environment %s..." % environment.name())
         pass  # ToDo: implement and change log message
 
-    def install(self, environment: IEnvironment, default_python_version: str = default_python_version):
-        """Creates or updates an an environment."""
+    def install(
+        self,
+        environment: IEnvironment,
+        default_python_version: Optional[str] = default_python_version,
+    ):
         self.create_or_update_env(environment, default_python_version)

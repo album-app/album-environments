@@ -4,10 +4,10 @@ from pathlib import Path
 import validators
 from album.runner.album_logging import get_active_logger
 
+from album.environments.api.controller.conda_lock_manager import ICondaLockManager
+from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.environment_api import IEnvironmentAPI
 from album.environments.api.model.environment import IEnvironment
-from album.environments.controller.conda_lock_manager import CondaLockManager
-from album.environments.controller.package_manager import PackageManager
 from album.environments.utils.file_operations import (
     copy,
     get_dict_from_yml,
@@ -17,7 +17,9 @@ from album.environments.utils.url_operations import download_resource
 
 
 class EnvironmentAPI(IEnvironmentAPI):
-    def __init__(self, package_manager, conda_lock_manager: CondaLockManager):
+    def __init__(
+        self, package_manager: IPackageManager, conda_lock_manager: ICondaLockManager
+    ):
         # get installed package manager
         self._package_manager = package_manager
         self._conda_lock_manager = conda_lock_manager
@@ -48,10 +50,10 @@ class EnvironmentAPI(IEnvironmentAPI):
         else:
             raise OSError("Environment not set! Cannot run scripts!")
 
-    def get_package_manager(self) -> PackageManager:
+    def get_package_manager(self) -> IPackageManager:
         return self._package_manager
 
-    def get_conda_lock_manager(self) -> CondaLockManager:
+    def get_conda_lock_manager(self) -> ICondaLockManager:
         return self._conda_lock_manager
 
     @staticmethod
@@ -121,7 +123,7 @@ class EnvironmentAPI(IEnvironmentAPI):
         solution_lock_file = Path(solution_lock_file)
         if (
             solution_lock_file.is_file()
-            and self._conda_lock_manager._conda_lock_executable is not None
+            and self._conda_lock_manager.conda_lock_executable() is not None
         ):
             get_active_logger().debug("Creating solution environment from lock file.")
             self._conda_lock_manager.create_environment_from_lockfile(

@@ -1,42 +1,41 @@
+"""Module for handling micromamba environments."""
 import os
 import sys
 from pathlib import Path
+from typing import List
 
-from album.environments.controller.package_manager import PackageManager
-
+from album.environments.api.controller.package_manager import IPackageManager
 
 # TODO: Still has the conda executable of the CondaManager parent class. I don' like that, maybe create an extra package
 #  manager class from which every Manager(conda/mamba/micromamba) inherits
 
 
-class MicromambaManager(PackageManager):
+class MicromambaManager(IPackageManager):
     """Class for handling micromamba environments.
 
     The micromamba class manages the environments a solution is supposed to run in. It provides all features necessary
     for environment creation, deletion, dependency installation, etc.
 
     Notes:
-        An installed \"micromamba\" program must be available and callable at the .album/micromamba directory.
+        An installed "micromamba" program must be available and callable at the .album/micromamba directory.
 
     """
 
-    def __init__(self, micromamba_executable, base_env_path):
+    def __init__(self, micromamba_executable: str, base_env_path: Path):
         super().__init__(micromamba_executable, "micromamba", base_env_path)
 
     def get_active_environment_name(self):
-        """Returns the environment from the active environment."""
         environment_info = self.get_info()
         env_name = environment_info["environment"]
         env_name = env_name.rstrip(" (active)")
         return env_name
 
     def get_active_environment_path(self):
-        """Returns the environment for the active environment."""
         environment_info = self.get_info()
         path = environment_info["env location"]
         return path
 
-    def _get_env_create_args(self, env_file, env_prefix):
+    def _get_env_create_args(self, env_file, env_prefix) -> List[str]:
         subprocess_args = [
             self.get_install_environment_executable(),
             "create",
@@ -48,7 +47,7 @@ class MicromambaManager(PackageManager):
         ]
         return subprocess_args
 
-    def _get_run_script_args(self, environment_path, script_full_path):
+    def _get_run_script_args(self, environment_path, script_full_path) -> List[str]:
         if sys.platform == "win32" or sys.platform == "cygwin":
             # NOTE: WHEN USING 'CONDA RUN' THE CORRECT ENVIRONMENT GETS TEMPORARY ACTIVATED,
             # BUT THE PATH POINTS TO THE WRONG PYTHON (conda base folder python) BECAUSE THE CONDA BASE PATH
@@ -74,7 +73,7 @@ class MicromambaManager(PackageManager):
             ]
         return subprocess_args
 
-    def _get_remove_env_args(self, path):
+    def _get_remove_env_args(self, path) -> List[str]:
         subprocess_args = [
             self.get_install_environment_executable(),
             "remove",

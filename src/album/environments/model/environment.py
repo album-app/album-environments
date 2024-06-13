@@ -1,12 +1,21 @@
-from album.environments.api.model.environment import IEnvironment
+from pathlib import Path
+from typing import Union
+
 from album.runner import album_logging
+
+from album.environments.api.model.environment import IEnvironment
 
 module_logger = album_logging.get_active_logger
 
 
 class Environment(IEnvironment):
-    def __init__(self, yaml_file, environment_name, environment_path=None):
-        """Init routine
+    def __init__(
+        self,
+        yaml_file: Union[Path, None],
+        environment_name: str,
+        environment_path: str = None,
+    ):
+        """Initialize the environment object.
 
         Args:
             yaml_file:

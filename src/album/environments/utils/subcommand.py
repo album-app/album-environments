@@ -1,3 +1,4 @@
+"""Module for running a command in a subprocess and logging its output."""
 import io
 import re
 import subprocess
@@ -16,6 +17,7 @@ class LogfileBuffer(io.StringIO):
     def __init__(
         self, module_logger, message_formatter="%(message)s", error_logger=False
     ):
+        """Initialize the LogfileBuffer."""
         super().__init__()
         self.message_formatter = message_formatter
         self.leftover_message = None
@@ -27,10 +29,11 @@ class LogfileBuffer(io.StringIO):
         self.logger_name_current = self.logger_name_script
         self.logger_name_unnamed = self.logger_name_script + ".log"
 
-    def write(self, input) -> int:
-        if not isinstance(input, str):
-            input = str(input, "utf-8")
-        m = input.rstrip()
+    def write(self, input_str) -> int:
+        """Write to the buffer."""
+        if not isinstance(input_str, str):
+            input_str = str(input_str, "utf-8")
+        m = input_str.rstrip()
 
         log_entry = self.parse_log(m)
 
@@ -39,7 +42,7 @@ class LogfileBuffer(io.StringIO):
             if log_entry.name:
                 log_entry.name = log_entry.name.strip()
                 if log_entry.name.startswith("root.script"):
-                    log_entry.name = log_entry.name.lstrip("root.script")
+                    log_entry.name = log_entry.name.lstrip("root.script")  # noqa: B005
                     log_entry.name = log_entry.name.lstrip(".")
                 if len(log_entry.name) > 0:
                     log_entry.name = self.logger_name_script + "." + log_entry.name
@@ -79,6 +82,7 @@ class LogfileBuffer(io.StringIO):
 
     @staticmethod
     def parse_log(text) -> Optional[LogEntry]:
+        """Parse the log message."""
         res = LogfileBuffer._parse_album_runner_log(text)
         if not res:
             res = LogfileBuffer._parse_album_log(text)
@@ -95,6 +99,7 @@ class LogfileBuffer(io.StringIO):
 
     @staticmethod
     def get_script_logging_formatter_regex():
+        """Get the regex for the script logging formatter."""
         regex_log_level = "DEBUG|INFO|WARNING|ERROR"
         return r"(%s)\s+([\s\S]+) - ([\s\S]+)?" % regex_log_level
 
@@ -115,7 +120,7 @@ class LogfileBuffer(io.StringIO):
         if r:
             if len(r.groups()) == 3:
                 name = r.group(2)
-                if name != None and len(name) == 0:
+                if name is not None and len(name) == 0:
                     name = None
                 return LogEntry(name=name, level=r.group(1), message=r.group(3))
             else:
@@ -142,7 +147,10 @@ class LogfileBuffer(io.StringIO):
 
 
 class LogProcessing:
+    """Class for processing the log output of a subprocess."""
+
     def __init__(self, logger, log_output, message_formatter):
+        """Initialize the LogProcessing."""
         if log_output:
             self.info_logger = LogfileBuffer(logger, message_formatter)
             self.error_logger = LogfileBuffer(
@@ -153,18 +161,21 @@ class LogProcessing:
             self.error_logger = io.StringIO()
 
     def log_info(self, s):
+        """Log an info message."""
         self.info_logger.write(s)
 
     def log_error(self, s):
+        """Log an error message."""
         self.error_logger.write(s)
 
     def close(self):
+        """Close the loggers."""
         self.info_logger.close()
         self.error_logger.close()
 
 
 def run(command, log_output=True, message_formatter=None, pipe_output=True, env=None):
-    """Runs a command in a subprocess thereby logging its output.
+    """Run a command in a subprocess thereby logging its output.
 
     Args:
         log_output:
@@ -197,7 +208,10 @@ def run(command, log_output=True, message_formatter=None, pipe_output=True, env=
 
 
 class SubProcessError(RuntimeError):
+    """Exception class for subprocess errors."""
+
     def __init__(self, exit_status, message) -> None:
+        """Initialize the SubProcessError."""
         self.exit_status = exit_status
         super().__init__(message)
 
@@ -211,10 +225,12 @@ def _run_process(command, log: LogProcessing, pipe_output, env):
             stderr=subprocess.STDOUT,
             env=env,
             text=True,
-            encoding=sys.getfilesystemencoding()
+            encoding=sys.getfilesystemencoding(),
         )
         while True:
-            output = process.stdout.readline()
+            output = None
+            if process.stdout is not None:
+                output = process.stdout.readline()
             if process.poll() is not None:
                 break
             if output:
@@ -229,5 +245,5 @@ def _run_process(command, log: LogProcessing, pipe_output, env):
 
 
 def check_output(command, env=None):
-    """Runs a command thereby checking its output."""
+    """Run a command thereby checking its output."""
     return subprocess.check_output(command, env=env).decode("utf-8")

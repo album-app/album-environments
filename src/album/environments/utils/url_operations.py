@@ -1,19 +1,18 @@
+"""Module for handling operations with urls."""
 from pathlib import Path
 
 import requests
+from album.runner import album_logging
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
-from album.environments.utils.file_operations import (
-    create_path_recursively,
-)
-from album.runner import album_logging
+from album.environments.utils.file_operations import create_path_recursively
 
 module_logger = album_logging.get_active_logger
 
 
 def is_downloadable(url):
-    """Shows if url is a downloadable resource."""
+    """Show if url is a downloadable resource."""
     with _get_session() as s:
         h = s.head(url, allow_redirects=True)
         header = h.headers
@@ -24,8 +23,8 @@ def is_downloadable(url):
 
 
 def download_resource(url, path):
-    """Downloads a resource given its url."""
-    module_logger().debug("Download url %s to %s..." % (url, path))
+    """Download a resource given its url."""
+    module_logger().debug(f"Download url {url} to {path}...")
 
     path = Path(path)
 

@@ -1,17 +1,13 @@
 import time
 import unittest
 
-from test_album_environments.unit.environments.controller import (
-    test_micromamba_manager,
-    test_environment_handler,
-)
-from test_album_environments.unit.environments.model import (
-    test_environment,
-)
-from test_album_environments.unit.environments.utils import test_subcommand
+from test_album_environments.unit.environments import test_environment_API
+from test_album_environments.unit.environments.controller import test_micromamba_manager
+from test_album_environments.unit.environments.model import test_environment
 from test_album_environments.unit.environments.utils import (
-    test_url_operations,
     test_file_operations,
+    test_subcommand,
+    test_url_operations,
 )
 
 
@@ -20,7 +16,7 @@ def main():
     suite = unittest.TestSuite()
 
     suite.addTests(loader.loadTestsFromModule(test_micromamba_manager))
-    suite.addTests(loader.loadTestsFromModule(test_environment_handler))
+    suite.addTests(loader.loadTestsFromModule(test_environment_API))
     suite.addTests(loader.loadTestsFromModule(test_environment))
     suite.addTests(loader.loadTestsFromModule(test_subcommand))
     suite.addTests(loader.loadTestsFromModule(test_file_operations))

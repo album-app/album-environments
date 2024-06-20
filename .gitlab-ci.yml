@@ -1,6 +1,5 @@
 # CI Routine for the album-environments package.
 
-
 #----------------------------
 # templates
 #----------------------------
@@ -19,30 +18,31 @@
     - 'if(-Not (Test-Path .\.album)) {echo "Cache .album not found! Creating..."; New-Item -ItemType Directory -Force -Path .\.album} else { echo ".\.album cache found! with content:"; Get-ChildItem -Path .\.album}'
     - 'if(-Not (Test-Path .\micromamba)) {echo "Cache micromamba not found! Creating..."; New-Item -ItemType Directory -Force -Path .\micromamba} else { echo ".\micromamba cache found! with content:"; Get-ChildItem -Path .\micromamba}'
     - '$7ZIP_EXE=(Join-Path $env:ProgramFiles -ChildPath 7-Zip\7z.exe)'
-    - '$7ZIP_INSTALLER=(Join-Path downloads -ChildPath 7z.exe)'
-    - '$Env:MAMBA_ROOT_PREFIX=(Join-Path -Path (Get-Location) -ChildPath micromamba)'
+    - "$7ZIP_INSTALLER=(Join-Path downloads -ChildPath 7z.exe)"
+    - "$Env:MAMBA_ROOT_PREFIX=(Join-Path -Path (Get-Location) -ChildPath micromamba)"
     - '$Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba\Library\bin\micromamba.exe)'
-    - '$Env:USERPROFILE=$pwd'
+    - "$Env:USERPROFILE=$pwd"
     - '$Env:ALBUM_MICROMAMBA_PATH=(Join-Path -Path ($CI_PROJECT_DIR) -ChildPath micromamba\Library\bin\micromamba.exe)'
     - '$oldProgressPreference = $progressPreference; $progressPreference = "SilentlyContinue";'
-    - '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12'                                                                                                                                                                                                                                                                                          # set Security download protocol to avoid https errors
-    - 'if(-Not (Test-Path $7ZIP_EXE)) {if(-Not (Test-Path $7ZIP_INSTALLER)){Invoke-Webrequest -URI https://www.7-zip.org/a/7z2201-x64.exe -OutFile $7ZIP_INSTALLER}}'
+    - "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" # set Security download protocol to avoid https errors
+    - "if(-Not (Test-Path $7ZIP_EXE)) {if(-Not (Test-Path $7ZIP_INSTALLER)){Invoke-Webrequest -URI https://www.7-zip.org/a/7z2201-x64.exe -OutFile $7ZIP_INSTALLER}}"
     - 'if(-Not (Test-Path $7ZIP_EXE)) {Start-Process -FilePath $7ZIP_INSTALLER -Args "/S" -Verb RunAs -Wait}'
-    - 'Invoke-Webrequest -URI https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_WINDOWS.tar.bz2?inline=false -OutFile micromamba.tar.bz2'
-    - '& $7ZIP_EXE x micromamba.tar.bz2 -aoa'
+    - "Invoke-Webrequest -URI https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_WINDOWS.tar.bz2?inline=false -OutFile micromamba.tar.bz2"
+    - "& $7ZIP_EXE x micromamba.tar.bz2 -aoa"
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + $Env:MAMBA_ROOT_PREFIX)'
-    - '$progressPreference = $oldProgressPreference'
+    - "$progressPreference = $oldProgressPreference"
     - '.\micromamba\Library\bin\micromamba.exe create -y -n album -c conda-forge python=3.10'
     - '.\micromamba\Library\bin\micromamba.exe run -n album pip install -e .'
     - '.\micromamba\Library\bin\micromamba.exe run -n album pip install coverage'
     - '.\micromamba\Library\bin\micromamba.exe shell init -s powershell -p $Env:MAMBA_ROOT_PREFIX '
+    - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
 
   tags:
     - windows
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue  # not working properly
+    ErrorActionPreference: Continue # not working properly
   cache:
     key: one-key-to-rule-them-all-windows
     paths:
@@ -54,30 +54,31 @@
     - 'echo "We are in path: $pwd "'
     - 'echo "conda URL:  $env:MINICONDA_URL "'
     - '$oldProgressPreference = $progressPreference; $progressPreference = "SilentlyContinue";'
-    - 'if(-Not (Test-Path .\download)) {echo "Cache download not found! Creating..."; New-Item -ItemType Directory -Force -Path .\download} else { echo ".\download cache found! with content:"; Get-ChildItem -Path .\download}'                                                                                                                                                # create cache dir
-    - '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12'                                                                                                                                                                                                                                                                                          # set Security download protocol to avoid https errors
-    - 'if(Test-Path .\download\miniconda_url.txt) {echo "found previous miniconda url information. Extracting information..."; $miniconda_cache_url = try {Get-Content -Path .\download\miniconda_url.txt -errorAction Stop} catch {echo "None"}; echo "Cached minconda executable: $miniconda_cache_url"} else { echo ".\download\miniconda_url.txt does not exist!"}'          # read url from cache
-    - 'if($miniconda_cache_url -ne $env:MINICONDA_URL) {echo "Cached URL not equal to given URL. Removing executable..."; Remove-Item -Path .\download\miniconda3.exe -Force; $force_install = "true"; echo "Force installation triggered!"} else { echo "No force installation necessary!"}'                                                                                    # check if url changed - if yes, remove cache and mark conda reinstall
-    - 'if(-Not (Test-Path .\download\miniconda3.exe)) {echo "Downloading miniconda executable..."; Invoke-WebRequest -UseBasicParsing -Uri $env:MINICONDA_URL -OutFile .\download\miniconda3.exe} else {echo "Executable found in .\download\miniconda3.exe. Reusing..."}'                                                                                                       # download the miniconda windows executable
-    - 'echo $env:MINICONDA_URL | Out-File -FilePath .\download\miniconda_url.txt'                                                                                                                                                                                                                                                                                                # cache version information
-    - 'Get-ChildItem -Path .\download'                                                                                                                                                                                                                                                                                                                                           # show download folder content
-    - '$env:PATH += ";$pwd\miniconda\condabin"'     # set path information
+    - 'if(-Not (Test-Path .\download)) {echo "Cache download not found! Creating..."; New-Item -ItemType Directory -Force -Path .\download} else { echo ".\download cache found! with content:"; Get-ChildItem -Path .\download}' # create cache dir
+    - "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" # set Security download protocol to avoid https errors
+    - 'if(Test-Path .\download\miniconda_url.txt) {echo "found previous miniconda url information. Extracting information..."; $miniconda_cache_url = try {Get-Content -Path .\download\miniconda_url.txt -errorAction Stop} catch {echo "None"}; echo "Cached minconda executable: $miniconda_cache_url"} else { echo ".\download\miniconda_url.txt does not exist!"}' # read url from cache
+    - 'if($miniconda_cache_url -ne $env:MINICONDA_URL) {echo "Cached URL not equal to given URL. Removing executable..."; Remove-Item -Path .\download\miniconda3.exe -Force; $force_install = "true"; echo "Force installation triggered!"} else { echo "No force installation necessary!"}' # check if url changed - if yes, remove cache and mark conda reinstall
+    - 'if(-Not (Test-Path .\download\miniconda3.exe)) {echo "Downloading miniconda executable..."; Invoke-WebRequest -UseBasicParsing -Uri $env:MINICONDA_URL -OutFile .\download\miniconda3.exe} else {echo "Executable found in .\download\miniconda3.exe. Reusing..."}' # download the miniconda windows executable
+    - 'echo $env:MINICONDA_URL | Out-File -FilePath .\download\miniconda_url.txt' # cache version information
+    - 'Get-ChildItem -Path .\download' # show download folder content
+    - '$env:PATH += ";$pwd\miniconda\condabin"' # set path information
     - '$env:PATH += ";$pwd\miniconda\Scripts"'
     - '$env:PATH += ";$pwd\miniconda\Library\bin"'
-    - '$conda_available = try {Get-Command "Get-CondaEnvironment" -errorAction Stop} catch {$null}'                                                                                                                                                                                                                                                                              # check if conda cmnd already available
-    - 'if($force_install -eq "true") {$conda_available = $null}'                                                                                                                                                                                                                                                                                                                 # mark conda reinstall
+    - '$conda_available = try {Get-Command "Get-CondaEnvironment" -errorAction Stop} catch {$null}' # check if conda cmnd already available
+    - 'if($force_install -eq "true") {$conda_available = $null}' # mark conda reinstall
     - 'if($conda_available -eq $null) {echo "conda cmnd not available! Will install in $pwd\miniconda..."; Start-Process .\download\miniconda3.exe -argumentlist "/InstallationType=JustMe /S /D=$pwd\miniconda" -wait} else {echo "Skip downloading!..."}'
-    - 'echo "Environment path: $env:PATH"'
-    - 'conda init'
-    - 'conda config --set notify_outdated_conda false'
-    - 'conda install -y mamba -c conda-forge'
-    - '$progressPreference = $oldProgressPreference'
+    - 'echo "Environment path: $env:PATH" '
+    - "conda init"
+    - "conda config --set notify_outdated_conda false"
+    - "conda install -y mamba -c conda-forge"
+    - "$progressPreference = $oldProgressPreference"
+    - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
     - windows
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue  # not working properly
+    ErrorActionPreference: Continue # not working properly
     MINICONDA_URL: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
   cache:
     key: one-key-to-rule-them-all-windows-conda-with-mamba
@@ -85,42 +86,41 @@
       - .\download
       - .cache\pip
 
-
 .windows_base_template_conda:
   before_script:
     - 'echo "We are in path: $pwd "'
     - 'echo "conda URL:  $env:MINICONDA_URL "'
     - '$oldProgressPreference = $progressPreference; $progressPreference = "SilentlyContinue";'
-    - 'if(-Not (Test-Path .\download)) {echo "Cache download not found! Creating..."; New-Item -ItemType Directory -Force -Path .\download} else { echo ".\download cache found! with content:"; Get-ChildItem -Path .\download}'                                                                                                                                                # create cache dir
-    - '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12'                                                                                                                                                                                                                                                                                          # set Security download protocol to avoid https errors
-    - 'if(Test-Path .\download\miniconda_url.txt) {echo "found previous miniconda url information. Extracting information..."; $miniconda_cache_url = try {Get-Content -Path .\download\miniconda_url.txt -errorAction Stop} catch {echo "None"}; echo "Cached minconda executable: $miniconda_cache_url"} else { echo ".\download\miniconda_url.txt does not exist!"}'          # read url from cache
-    - 'if($miniconda_cache_url -ne $env:MINICONDA_URL) {echo "Cached URL not equal to given URL. Removing executable..."; Remove-Item -Path .\download\miniconda3.exe -Force; $force_install = "true"; echo "Force installation triggered!"} else { echo "No force installation necessary!"}'                                                                                    # check if url changed - if yes, remove cache and mark conda reinstall
-    - 'if(-Not (Test-Path .\download\miniconda3.exe)) {echo "Downloading miniconda executable..."; Invoke-WebRequest -UseBasicParsing -Uri $env:MINICONDA_URL -OutFile .\download\miniconda3.exe} else {echo "Executable found in .\download\miniconda3.exe. Reusing..."}'                                                                                                       # download the miniconda windows executable
-    - 'echo $env:MINICONDA_URL | Out-File -FilePath .\download\miniconda_url.txt'                                                                                                                                                                                                                                                                                                # cache version information
-    - 'Get-ChildItem -Path .\download'                                                                                                                                                                                                                                                                                                                                           # show download folder content
-    - '$env:PATH += ";$pwd\miniconda\condabin"'     # set path information
+    - 'if(-Not (Test-Path .\download)) {echo "Cache download not found! Creating..."; New-Item -ItemType Directory -Force -Path .\download} else { echo ".\download cache found! with content:"; Get-ChildItem -Path .\download}' # create cache dir
+    - "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" # set Security download protocol to avoid https errors
+    - 'if(Test-Path .\download\miniconda_url.txt) {echo "found previous miniconda url information. Extracting information..."; $miniconda_cache_url = try {Get-Content -Path .\download\miniconda_url.txt -errorAction Stop} catch {echo "None"}; echo "Cached minconda executable: $miniconda_cache_url"} else { echo ".\download\miniconda_url.txt does not exist!"}' # read url from cache
+    - 'if($miniconda_cache_url -ne $env:MINICONDA_URL) {echo "Cached URL not equal to given URL. Removing executable..."; Remove-Item -Path .\download\miniconda3.exe -Force; $force_install = "true"; echo "Force installation triggered!"} else { echo "No force installation necessary!"}' # check if url changed - if yes, remove cache and mark conda reinstall
+    - 'if(-Not (Test-Path .\download\miniconda3.exe)) {echo "Downloading miniconda executable..."; Invoke-WebRequest -UseBasicParsing -Uri $env:MINICONDA_URL -OutFile .\download\miniconda3.exe} else {echo "Executable found in .\download\miniconda3.exe. Reusing..."}' # download the miniconda windows executable
+    - 'echo $env:MINICONDA_URL | Out-File -FilePath .\download\miniconda_url.txt' # cache version information
+    - 'Get-ChildItem -Path .\download' # show download folder content
+    - '$env:PATH += ";$pwd\miniconda\condabin"' # set path information
     - '$env:PATH += ";$pwd\miniconda\Scripts"'
     - '$env:PATH += ";$pwd\miniconda\Library\bin"'
-    - '$conda_available = try {Get-Command "Get-CondaEnvironment" -errorAction Stop} catch {$null}'                                                                                                                                                                                                                                                                              # check if conda cmnd already available
-    - 'if($force_install -eq "true") {$conda_available = $null}'                                                                                                                                                                                                                                                                                                                 # mark conda reinstall
+    - '$conda_available = try {Get-Command "Get-CondaEnvironment" -errorAction Stop} catch {$null}' # check if conda cmnd already available
+    - 'if($force_install -eq "true") {$conda_available = $null}' # mark conda reinstall
     - 'if($conda_available -eq $null) {echo "conda cmnd not available! Will install in $pwd\miniconda..."; Start-Process .\download\miniconda3.exe -argumentlist "/InstallationType=JustMe /S /D=$pwd\miniconda" -wait} else {echo "Skip downloading!..."}'
-    - 'echo "Environment path: $env:PATH"'
-    - 'conda init'
-    - 'conda config --set notify_outdated_conda false'
-    - '$progressPreference = $oldProgressPreference'
+    - 'echo "Environment path: $env:PATH" '
+    - "conda init"
+    - "conda config --set notify_outdated_conda false"
+    - "$progressPreference = $oldProgressPreference"
+    - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
     - windows
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue  # not working properly
+    ErrorActionPreference: Continue # not working properly
     MINICONDA_URL: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
   cache:
     key: one-key-to-rule-them-all-windows-conda
     paths:
       - .\download
       - .cache\pip
-
 
 # Linux base template for running tests with micromamba as package manager
 #
@@ -146,6 +146,7 @@
     - pip install .
     - python -V
     - python -c "import shutil; print(shutil.which(\"micromamba\"))"
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip install coverage
     - pip list
   variables:
@@ -160,7 +161,6 @@
       - ${CONDA_PREFIX}/pkgs/urls.txt
       - .cache/pip
 
-
 # Linux base template for running test with conda as package manager
 #
 # Uses a docker image where conda is already installed.
@@ -172,7 +172,7 @@
   before_script:
     - apt update
     - apt install git -y
-    - python -V  # Print out python version for debugging
+    - python -V # Print out python version for debugging
     - which python
     - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
     - conda init bash
@@ -183,6 +183,7 @@
     - conda activate album-environments
     - python -V
     - python -c "import shutil; print(shutil.which(\"conda\"))"
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip list
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
@@ -208,7 +209,7 @@
   before_script:
     - apt update
     - apt install git -y
-    - python -V  # Print out python version for debugging
+    - python -V # Print out python version for debugging
     - which python
     - mamba create -y --channel=conda-forge -n album-environments python=3.9
     - source /opt/conda/bin/activate
@@ -217,6 +218,7 @@
     - which python
     - python -V
     - python -c "import shutil; print(shutil.which(\"mamba\"))"
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip list
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
@@ -229,8 +231,6 @@
       - ${CONDA_PREFIX}/pkgs/*.tar.bz2
       - ${CONDA_PREFIX}/pkgs/urls.txt
       - .cache/pip
-
-
 
 # Macos base template for running tests with micromamba as package manager
 #
@@ -257,6 +257,7 @@
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
     - python -c "import shutil; print(shutil.which(\"micromamba\"))"
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip list
   after_script:
     - tmpdir=$(</tmp/tmpdir)
@@ -288,11 +289,12 @@
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
     - python -c "import shutil; print(shutil.which(\"conda\"))"
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - pip list
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir
     - rm -rf $tmpdir
-
 
 # Macos base template for running tests with conda as package manager
 #
@@ -322,11 +324,12 @@
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
     - python -c "import shutil; print(shutil.which(\"mamba\"))"
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - pip list
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir
     - rm -rf $tmpdir
-
 
 #----------------------------
 # stages
@@ -337,7 +340,6 @@ stages:
   - release
   - deploy
   - post-deploy
-
 
 #----------------------------
 # jobs
@@ -376,17 +378,16 @@ gitlab release:
   script:
     - echo "running release_job for version $VERSION and tag $TAG"
   rules:
-      - if: $CI_COMMIT_TAG
-        when: never
-      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-        changes:
-          - setup.cfg
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - setup.cfg
   release:
-    name: 'Release $TAG'
-    description: 'Created using the release-cli'
-    tag_name: '$TAG'
-    ref: '$CI_COMMIT_SHA'
-
+    name: "Release $TAG"
+    description: "Created using the release-cli"
+    tag_name: "$TAG"
+    ref: "$CI_COMMIT_SHA"
 
 gitlab pypi deploy:
   image: python:latest
@@ -403,11 +404,11 @@ gitlab pypi deploy:
     - python setup.py sdist bdist_wheel
     - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
   rules:
-      - if: $CI_COMMIT_TAG
-        when: never
-      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-        changes:
-          - setup.cfg
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - setup.cfg
 
 pypi deploy:
   image: python:latest
@@ -426,11 +427,11 @@ pypi deploy:
     - python setup.py sdist bdist_wheel
     - TWINE_PASSWORD=$PYPI_DEPLOY_TOKEN TWINE_USERNAME=$PYPI_DEPLOY_USER python -m twine upload --repository-url https://upload.pypi.org/legacy/  dist/*
   rules:
-      - if: $CI_COMMIT_TAG
-        when: never
-      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-        changes:
-          - setup.cfg
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - setup.cfg
 
 # Linux Tests
 
@@ -500,7 +501,6 @@ unit tests macos conda with mamba:
   script:
     - python -m unittest test_album_environments/unit/run_all_unit_conda_with_mamba.py
 
-
 integration tests macos micromamba:
   extends: .macos_base_template_micromamba
   stage: test
@@ -512,7 +512,6 @@ integration tests macos conda:
   stage: test
   script:
     - python -m unittest test_album_environments/integration/run_all_integration_conda.py
-
 
 integration tests macos conda with mamba:
   extends: .macos_base_template_conda_with_mamba
@@ -537,20 +536,17 @@ unit tests windows conda:
   script:
     - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
 
-
 unit tests windows conda with mamba:
   extends: .windows_base_template_conda_with_mamba
   stage: test
   script:
     - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
 
-
 integration tests windows conda with mamba:
   extends: .windows_base_template_conda_with_mamba
   stage: test
   script:
     - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
-
 
 integration tests windows micromamba:
   extends: .windows_base_template_micromamba

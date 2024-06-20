@@ -1,13 +1,15 @@
+import os
 from io import StringIO
 from pathlib import Path
+from typing import Dict, List, Mapping, Optional, Union
 
 import validators
 from album.runner.album_logging import get_active_logger
 
+from album.environments.api.controller.conda_lock_manager import ICondaLockManager
+from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.environment_api import IEnvironmentAPI
 from album.environments.api.model.environment import IEnvironment
-from album.environments.controller.conda_lock_manager import CondaLockManager
-from album.environments.controller.package_manager import PackageManager
 from album.environments.utils.file_operations import (
     copy,
     get_dict_from_yml,
@@ -17,12 +19,16 @@ from album.environments.utils.url_operations import download_resource
 
 
 class EnvironmentAPI(IEnvironmentAPI):
-    def __init__(self, package_manager, conda_lock_manager: CondaLockManager):
+    def __init__(
+        self, package_manager: IPackageManager, conda_lock_manager: ICondaLockManager
+    ):
         # get installed package manager
         self._package_manager = package_manager
         self._conda_lock_manager = conda_lock_manager
 
-    def install_environment(self, environment, default_python_version) -> IEnvironment:
+    def install_environment(
+        self, environment: IEnvironment, default_python_version: str
+    ) -> None:
         return self._package_manager.install(environment, default_python_version)
 
     def remove_environment(self, environment: IEnvironment) -> bool:
@@ -32,11 +38,16 @@ class EnvironmentAPI(IEnvironmentAPI):
     def run_script(
         self,
         environment: IEnvironment,
-        script,
-        environment_variables=None,
-        argv=None,
-        pipe_output=True,
-    ):
+        script: str,
+        environment_variables: Union[
+            Mapping[str, str],
+            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            None,
+        ] = None,
+        argv: Union[List[str], None] = None,
+        pipe_output: bool = True,
+    ) -> None:
         if environment:
             self._package_manager.run_script(
                 environment,
@@ -48,14 +59,18 @@ class EnvironmentAPI(IEnvironmentAPI):
         else:
             raise OSError("Environment not set! Cannot run scripts!")
 
-    def get_package_manager(self) -> PackageManager:
+    def get_package_manager(self) -> IPackageManager:
         return self._package_manager
 
-    def get_conda_lock_manager(self) -> CondaLockManager:
+    def get_conda_lock_manager(self) -> ICondaLockManager:
         return self._conda_lock_manager
 
     @staticmethod
-    def _prepare_env_file(dependencies_dict, cache_path, env_name):
+    def _prepare_env_file(
+        dependencies_dict: Dict["str", Union[str, Path, StringIO]],
+        cache_path: str,
+        env_name: str,
+    ) -> Optional[Path]:  # todo: seems not to be used
         """Check how to set up an environment. Returns a path to a valid yaml file.
 
         Environment name in that file will be overwritten!
@@ -74,8 +89,8 @@ class EnvironmentAPI(IEnvironmentAPI):
         if dependencies_dict:
             if "environment_file" in dependencies_dict:
                 env_file = dependencies_dict["environment_file"]
-
-                yaml_path = cache_path.joinpath(
+                _cache_path = Path(cache_path)
+                yaml_path = _cache_path.joinpath(
                     "{arg1}{arg2}".format(arg1=env_name, arg2=".yml")
                 )
                 Path(yaml_path.parent).mkdir(parents=True, exist_ok=True)
@@ -117,15 +132,17 @@ class EnvironmentAPI(IEnvironmentAPI):
             return None
         return None
 
-    def create_environment_prefer_lock_file(self, environment, solution_lock_file):
-        solution_lock_file = Path(solution_lock_file)
+    def create_environment_prefer_lock_file(
+        self, environment: IEnvironment, solution_lock_file: str
+    ) -> None:
+        _solution_lock_file = Path(solution_lock_file)
         if (
-            solution_lock_file.is_file()
-            and self._conda_lock_manager._conda_lock_executable is not None
+            _solution_lock_file.is_file()
+            and self._conda_lock_manager.conda_lock_executable() is not None
         ):
             get_active_logger().debug("Creating solution environment from lock file.")
             self._conda_lock_manager.create_environment_from_lockfile(
-                solution_lock_file, environment.path()
+                _solution_lock_file, environment.path()  # type: ignore
             )
         else:
             self._package_manager.install(environment)

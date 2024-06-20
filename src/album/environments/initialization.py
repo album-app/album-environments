@@ -1,9 +1,12 @@
 """Initializes the environmentAPI object."""
 import shutil
 from pathlib import Path
+from typing import Optional
 
 from album.runner.album_logging import get_active_logger
 
+from album.environments.api.controller.conda_lock_manager import ICondaLockManager
+from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.environment_api import IEnvironmentAPI
 from album.environments.controller.conda_lock_manager import CondaLockManager
 from album.environments.controller.conda_manager import CondaManager
@@ -59,6 +62,8 @@ class PackageManagerDetector:
         # check for conda-lock
         if conda_lock_path is None:
             self._conda_lock_executable = self.search_lock_manager()
+        else:
+            self._conda_lock_executable = conda_lock_path
 
         self._package_manager = self.create_package_manager(base_env_path)
         self._conda_lock_manager = CondaLockManager(
@@ -66,7 +71,7 @@ class PackageManagerDetector:
         )
 
     @staticmethod
-    def search_lock_manager():
+    def search_lock_manager() -> str:
         """Search for the conda-lock executable."""
         conda_lock_executable = shutil.which("conda-lock")
         if conda_lock_executable:
@@ -113,7 +118,7 @@ class PackageManagerDetector:
                 else:
                     raise RuntimeError("No package manager found!")
 
-    def create_package_manager(self, base_env_path):
+    def create_package_manager(self, base_env_path) -> IPackageManager:
         """Create the package manager objet."""
         if self._micromamba_executable:
             return MicromambaManager(
@@ -124,21 +129,21 @@ class PackageManagerDetector:
         else:
             return CondaManager(self._conda_executable, base_env_path=base_env_path)
 
-    def get_conda_lock_manager(self):
+    def get_conda_lock_manager(self) -> ICondaLockManager:
         """Get the conda lock manager."""
         return self._conda_lock_manager
 
-    def get_package_manager(self):
+    def get_package_manager(self) -> IPackageManager:
         """Get the package manager."""
         return self._package_manager
 
 
 def init_environment_handler(
-    env_base_path,
-    micromamba_path=None,
-    conda_path=None,
-    mamba_path=None,
-    conda_lock_path=None,
+    env_base_path: Path,
+    micromamba_path: Optional[str] = None,
+    conda_path: Optional[str] = None,
+    mamba_path: Optional[str] = None,
+    conda_lock_path: Optional[str] = None,
 ) -> IEnvironmentAPI:
     """Initialize the environment API.
 

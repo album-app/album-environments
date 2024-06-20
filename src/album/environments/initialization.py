@@ -62,6 +62,8 @@ class PackageManagerDetector:
         # check for conda-lock
         if conda_lock_path is None:
             self._conda_lock_executable = self.search_lock_manager()
+        else:
+            self._conda_lock_executable = conda_lock_path
 
         self._package_manager = self.create_package_manager(base_env_path)
         self._conda_lock_manager = CondaLockManager(

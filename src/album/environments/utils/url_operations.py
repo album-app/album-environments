@@ -11,7 +11,7 @@ from album.environments.utils.file_operations import create_path_recursively
 module_logger = album_logging.get_active_logger
 
 
-def is_downloadable(url):
+def is_downloadable(url) -> bool:
     """Show if url is a downloadable resource."""
     with _get_session() as s:
         h = s.head(url, allow_redirects=True)
@@ -22,7 +22,7 @@ def is_downloadable(url):
         return True
 
 
-def download_resource(url, path):
+def download_resource(url, path) :
     """Download a resource given its url."""
     module_logger().debug(f"Download url {url} to {path}...")
 

@@ -1,9 +1,11 @@
 """Module for running a command in a subprocess and logging its output."""
 import io
+import os
 import re
 import subprocess
 import sys
-from typing import Optional
+from logging import Logger
+from typing import List, Mapping, Optional, Union
 
 from album.runner import album_logging
 from album.runner.album_logging import LogEntry, LogLevel
@@ -15,7 +17,10 @@ class LogfileBuffer(io.StringIO):
     """Class for logging in a subprocess. Logs to the current active logger."""
 
     def __init__(
-        self, module_logger, message_formatter="%(message)s", error_logger=False
+        self,
+        module_logger: Logger,
+        message_formatter: Union[str, None] = "%(message)s",
+        error_logger: bool = False,
     ):
         """Initialize the LogfileBuffer."""
         super().__init__()
@@ -29,7 +34,7 @@ class LogfileBuffer(io.StringIO):
         self.logger_name_current = self.logger_name_script
         self.logger_name_unnamed = self.logger_name_script + ".log"
 
-    def write(self, input_str) -> int:
+    def write(self, input_str: str) -> int:
         """Write to the buffer."""
         if not isinstance(input_str, str):
             input_str = str(input_str, "utf-8")
@@ -68,7 +73,7 @@ class LogfileBuffer(io.StringIO):
         #
         return 1
 
-    def _log(self, current_level, message):
+    def _log(self, current_level: LogLevel, message: str) -> None:
         if LogLevel.INFO.name == current_level:
             self.logger.info(message)
         elif LogLevel.DEBUG.name == current_level:
@@ -81,7 +86,7 @@ class LogfileBuffer(io.StringIO):
             self.logger.info(message)
 
     @staticmethod
-    def parse_log(text) -> Optional[LogEntry]:
+    def parse_log(text: str) -> Optional[LogEntry]:
         """Parse the log message."""
         res = LogfileBuffer._parse_album_runner_log(text)
         if not res:
@@ -98,20 +103,20 @@ class LogfileBuffer(io.StringIO):
             return None
 
     @staticmethod
-    def get_script_logging_formatter_regex():
+    def get_script_logging_formatter_regex() -> str:
         """Get the regex for the script logging formatter."""
         regex_log_level = "DEBUG|INFO|WARNING|ERROR"
         return r"(%s)\s+([\s\S]+) - ([\s\S]+)?" % regex_log_level
 
     @staticmethod
-    def _parse_album_runner_log(text):
+    def _parse_album_runner_log(text: str) -> Optional[LogEntry]:
         r = re.search(LogfileBuffer.get_script_logging_formatter_regex(), text)
         if r:
             return LogEntry(name=r.group(2), level=r.group(1), message=r.group(3))
         return None
 
     @staticmethod
-    def _parse_album_log(text):
+    def _parse_album_log(text: str) -> Optional[LogEntry]:
         r = re.search(
             r"\d\d:\d\d:\d\d (%s)(?:[\s]+(~*))? ([\s\S]+)?"
             % LogfileBuffer._regex_log_level(),
@@ -128,28 +133,33 @@ class LogfileBuffer(io.StringIO):
         return None
 
     @staticmethod
-    def _parse_level_colon_log(text):
+    def _parse_level_colon_log(text: str) -> Optional[LogEntry]:
         r = re.search(r"(%s): ([\s\S]+)?" % LogfileBuffer._regex_log_level(), text)
         if r:
             return LogEntry(name=None, level=r.group(1), message=r.group(2))
         return None
 
     @staticmethod
-    def _parse_level_brackets_log(text):
+    def _parse_level_brackets_log(text: str) -> Optional[LogEntry]:
         r = re.search(r"\[(%s)\] ([\s\S]+)?" % LogfileBuffer._regex_log_level(), text)
         if r:
             return LogEntry(name=None, level=r.group(1), message=r.group(2))
         return None
 
     @staticmethod
-    def _regex_log_level():
+    def _regex_log_level() -> str:
         return "DEBUG|INFO|WARNING|ERROR"
 
 
 class LogProcessing:
     """Class for processing the log output of a subprocess."""
 
-    def __init__(self, logger, log_output, message_formatter):
+    def __init__(
+        self,
+        logger: Logger,
+        log_output: bool,
+        message_formatter: Union[str, None] = None,
+    ):
         """Initialize the LogProcessing."""
         if log_output:
             self.info_logger = LogfileBuffer(logger, message_formatter)
@@ -160,21 +170,32 @@ class LogProcessing:
             self.info_logger = io.StringIO()
             self.error_logger = io.StringIO()
 
-    def log_info(self, s):
+    def log_info(self, s: str) -> None:
         """Log an info message."""
         self.info_logger.write(s)
 
-    def log_error(self, s):
+    def log_error(self, s: str) -> None:
         """Log an error message."""
         self.error_logger.write(s)
 
-    def close(self):
+    def close(self) -> None:
         """Close the loggers."""
         self.info_logger.close()
         self.error_logger.close()
 
 
-def run(command, log_output=True, message_formatter=None, pipe_output=True, env=None):
+def run(
+    command: List[str],
+    log_output: bool = True,
+    message_formatter: Union[str, None] = None,
+    pipe_output: bool = True,
+    env: Union[
+        Mapping[str, str],
+        Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        None,
+    ] = None,
+) -> Union[int, subprocess.CompletedProcess]:
     """Run a command in a subprocess thereby logging its output.
 
     Args:
@@ -210,13 +231,23 @@ def run(command, log_output=True, message_formatter=None, pipe_output=True, env=
 class SubProcessError(RuntimeError):
     """Exception class for subprocess errors."""
 
-    def __init__(self, exit_status, message) -> None:
+    def __init__(self, exit_status: Optional[int], message: str) -> None:
         """Initialize the SubProcessError."""
         self.exit_status = exit_status
         super().__init__(message)
 
 
-def _run_process(command, log: LogProcessing, pipe_output, env):
+def _run_process(
+    command: List[str],
+    log: LogProcessing,
+    pipe_output: bool,
+    env: Union[
+        Mapping[str, str],
+        Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        None,
+    ],
+) -> Union[int, subprocess.CompletedProcess]:
     if pipe_output:
         process = subprocess.Popen(
             command,
@@ -244,6 +275,14 @@ def _run_process(command, log: LogProcessing, pipe_output, env):
         return subprocess.run(command, env=env, encoding=sys.getfilesystemencoding())
 
 
-def check_output(command, env=None):
+def check_output(
+    command: List[str],
+    env: Union[
+        Mapping[str, str],
+        Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        None,
+    ] = None,
+) -> str:
     """Run a command thereby checking its output."""
     return subprocess.check_output(command, env=env).decode("utf-8")

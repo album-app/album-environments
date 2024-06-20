@@ -1,7 +1,9 @@
 """Interface for package managers, like Conda, Mamba, Micromamba, etc."""
+import os
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional
+from tempfile import _TemporaryFileWrapper
+from typing import Dict, List, Mapping, Optional, Union
 
 from album.environments.api.model.environment import IEnvironment
 
@@ -12,12 +14,12 @@ class IPackageManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_install_environment_executable(self):
+    def get_install_environment_executable(self) -> str:
         """Return the executable for the environment creation."""
         raise NotImplementedError
 
     @abstractmethod
-    def get_package_manager_name(self):
+    def get_package_manager_name(self) -> str:
         """Return the name of the package manager."""
         raise NotImplementedError
 
@@ -32,17 +34,23 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def _get_env_create_args(self, env_file, env_prefix) -> List[str]:
+    def _get_env_create_args(
+        self, env_file: _TemporaryFileWrapper[str], env_prefix: str
+    ) -> List[str]:
         """Return the arguments for the environment creation command."""
         raise NotImplementedError
 
     @abstractmethod
-    def _get_run_script_args(self, environment_path, script_full_path) -> List[str]:
+    def _get_run_script_args(
+        self,
+        environment_path: Union[Path, _TemporaryFileWrapper[str]],
+        script_full_path: str,
+    ) -> List[str]:
         """Return the arguments for a conda run in solution env call."""
         raise NotImplementedError
 
     @abstractmethod
-    def _get_remove_env_args(self, path) -> List[str]:
+    def _get_remove_env_args(self, path: Path) -> List[str]:
         """Return the arguments for the environment removal command."""
         raise NotImplementedError
 
@@ -52,7 +60,7 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def environment_exists(self, environment_path: str) -> bool:
+    def environment_exists(self, environment_path: Union[Path, str]) -> bool:
         """Check whether an environment already exists or not.
 
         Args:
@@ -65,7 +73,7 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def remove_environment(self, environment_path: str) -> bool:
+    def remove_environment(self, environment_path: Union[Path, str]) -> bool:
         """Remove an environment given its path.
 
         Does nothing when environment does not exist.
@@ -90,7 +98,7 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def list_environment(self, environment_path: str) -> Dict[str, str]:
+    def list_environment(self, environment_path: Path) -> Dict[str, str]:
         """List all available packages in the given environment.
 
         Args:
@@ -105,7 +113,7 @@ class IPackageManager:
     @abstractmethod
     def create_environment(
         self, environment_path: str, python_version: Optional[str], force: bool = False
-    ):
+    ) -> None:
         """Create a conda environment with python (latest version) installed.
 
         Args:
@@ -124,7 +132,9 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def create_environment_from_file(self, yaml_path: str, environment_path: str):
+    def create_environment_from_file(
+        self, yaml_path: Path, environment_path: str
+    ) -> None:
         """Create an environment given a path to a yaml file and its path.
 
         Args:
@@ -148,11 +158,16 @@ class IPackageManager:
     def run_script(
         self,
         environment: IEnvironment,
-        script,
-        environment_variables=None,
-        argv=None,
-        pipe_output=True,
-    ):
+        script: str,
+        environment_variables: Union[
+            Mapping[str, str],
+            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            None,
+        ] = None,
+        argv: Union[List[str], None] = None,
+        pipe_output: bool = True,
+    ) -> None:
         """Run the solution in the target environment.
 
         Args:
@@ -171,7 +186,10 @@ class IPackageManager:
 
     @abstractmethod
     def is_installed(
-        self, environment_path: str, package_name, min_package_version=None
+        self,
+        environment_path: Path,
+        package_name: str,
+        min_package_version: Union[str, None] = None,
     ) -> bool:
         """Check if package is installed in a certain version."""
         raise NotImplementedError
@@ -179,21 +197,25 @@ class IPackageManager:
     @abstractmethod
     def create_or_update_env(
         self, environment: IEnvironment, default_python_version: Optional[str]
-    ):
+    ) -> None:
         """Create or update the environment."""
         raise NotImplementedError
 
     @abstractmethod
-    def create(self, environment: IEnvironment, default_python_version: Optional[str]):
+    def create(
+        self, environment: IEnvironment, default_python_version: Optional[str]
+    ) -> None:
         """Create environment a solution runs in."""
         raise NotImplementedError
 
     @abstractmethod
-    def update(self, environment: IEnvironment):
+    def update(self, environment: IEnvironment) -> None:
         """Update the environment."""
         raise NotImplementedError
 
     @abstractmethod
-    def install(self, environment: IEnvironment, default_python_version: Optional[str]):
+    def install(
+        self, environment: IEnvironment, default_python_version: Optional[str]
+    ) -> None:
         """Create or updates an environment."""
         raise NotImplementedError

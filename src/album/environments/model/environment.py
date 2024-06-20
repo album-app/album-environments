@@ -13,7 +13,7 @@ class Environment(IEnvironment):
         self,
         yaml_file: Union[Path, None],
         environment_name: str,
-        environment_path: str = None,
+        environment_path: Union[Path, None] = None,
     ):
         """Initialize the environment object.
 
@@ -28,14 +28,14 @@ class Environment(IEnvironment):
         self._yaml_file = yaml_file
         self._path = environment_path
 
-    def name(self):
+    def name(self) -> str:
         return self._name
 
-    def yaml_file(self):
+    def yaml_file(self) -> Union[Path, None]:
         return self._yaml_file
 
-    def path(self):
+    def path(self) -> Union[Path, None]:
         return self._path
 
-    def set_path(self, path):
+    def set_path(self, path: Path) -> None:
         self._path = path

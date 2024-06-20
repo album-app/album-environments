@@ -1,5 +1,7 @@
+import os
 from io import StringIO
 from pathlib import Path
+from typing import List, Mapping, Union
 
 import validators
 from album.runner.album_logging import get_active_logger
@@ -35,9 +37,14 @@ class EnvironmentAPI(IEnvironmentAPI):
         self,
         environment: IEnvironment,
         script,
-        environment_variables=None,
-        argv=None,
-        pipe_output=True,
+        environment_variables: Union[
+            Mapping[str, str],
+            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            None,
+        ] = None,
+        argv: Union[List[str], None] = None,
+        pipe_output: bool = True,
     ):
         if environment:
             self._package_manager.run_script(
@@ -119,7 +126,9 @@ class EnvironmentAPI(IEnvironmentAPI):
             return None
         return None
 
-    def create_environment_prefer_lock_file(self, environment, solution_lock_file):
+    def create_environment_prefer_lock_file(
+        self, environment: IEnvironment, solution_lock_file: str
+    ):
         solution_lock_file = Path(solution_lock_file)
         if (
             solution_lock_file.is_file()

@@ -48,7 +48,7 @@ class CondaLockManager(ICondaLockManager):
 
     def create_environment_from_lockfile(
         self, conda_lock_file: Path, environment_path: Path
-    ):
+    ) -> None:
         environment_path = Path(environment_path)
         if self._package_manager.environment_exists(environment_path):
             get_active_logger().debug(

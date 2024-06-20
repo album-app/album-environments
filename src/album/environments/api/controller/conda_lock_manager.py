@@ -21,7 +21,7 @@ class ICondaLockManager:
     @abstractmethod
     def create_environment_from_lockfile(
         self, conda_lock_file: Path, environment_path: Path
-    ):
+    ) -> None:
         """Create a conda environment from a conda lock file.
 
         If the environment already exists, it will be removed first.

@@ -1,9 +1,9 @@
 import json
 import os
 import tempfile
-from abc import ABC, ABCMeta
+from abc import ABCMeta
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Mapping, Optional, Union
 
 import yaml
 from album.runner import album_logging
@@ -17,20 +17,22 @@ from album.environments.utils.subcommand import SubProcessError
 module_logger = album_logging.get_active_logger
 
 
-class PackageManager(IPackageManager, ABC):
+class PackageManager(IPackageManager):
 
     __metaclass__ = ABCMeta
     default_python_version = "3.10"
 
-    def __init__(self, install_executable, package_manager_name, base_env_path):
+    def __init__(
+        self, install_executable: str, package_manager_name: str, base_env_path: Path
+    ):
         self._install_env_executable = install_executable
         self._package_manager_name = package_manager_name
         self._base_env_path = base_env_path
 
-    def get_install_environment_executable(self):
+    def get_install_environment_executable(self) -> str:
         return self._install_env_executable
 
-    def get_package_manager_name(self):
+    def get_package_manager_name(self) -> str:
         return self._package_manager_name
 
     def get_environment_list(self) -> List[Path]:
@@ -40,14 +42,14 @@ class PackageManager(IPackageManager, ABC):
             return []
 
     @staticmethod
-    def _get_immediate_subdirectories(a_dir: Path):
+    def _get_immediate_subdirectories(a_dir: Path) -> List[Path]:
         return [
             a_dir.joinpath(name).resolve()
             for name in os.listdir(str(a_dir))
             if os.path.isdir(os.path.join(str(a_dir), name))
         ]
 
-    def environment_exists(self, environment_path: str) -> bool:
+    def environment_exists(self, environment_path: Union[Path, str]) -> bool:
         environment_list = self.get_environment_list()
         environment_path = Path(environment_path)
 
@@ -62,7 +64,7 @@ class PackageManager(IPackageManager, ABC):
             else False
         )
 
-    def remove_environment(self, environment_path) -> bool:
+    def remove_environment(self, environment_path: Union[Path, str]) -> bool:
         if self.get_active_environment_path() == environment_path:
             module_logger().warning("Cannot remove active environment! Skipping...")
             return False
@@ -72,7 +74,7 @@ class PackageManager(IPackageManager, ABC):
             return False
 
         try:
-            subprocess_args = self._get_remove_env_args(environment_path)
+            subprocess_args = self._get_remove_env_args(Path(environment_path))
             subcommand.run(subprocess_args, log_output=False)
         except SubProcessError:
             module_logger().debug(
@@ -86,7 +88,7 @@ class PackageManager(IPackageManager, ABC):
         output = subcommand.check_output(subprocess_args)
         return json.loads(output)
 
-    def list_environment(self, environment_path) -> Dict[str, str]:
+    def list_environment(self, environment_path: Path) -> Dict[str, str]:
         subprocess_args = [
             self.get_install_environment_executable(),
             "list",
@@ -102,7 +104,7 @@ class PackageManager(IPackageManager, ABC):
         environment_path: str,
         python_version: Optional[str] = default_python_version,
         force: bool = False,
-    ):
+    ) -> None:
         env_exists = self.environment_exists(environment_path)
         if force and env_exists:
             self.remove_environment(environment_path)
@@ -118,7 +120,9 @@ class PackageManager(IPackageManager, ABC):
             }
             self._install(environment_path, env_content)
 
-    def create_environment_from_file(self, yaml_path: str, environment_path: str):
+    def create_environment_from_file(
+        self, yaml_path: Path, environment_path: str
+    ) -> None:
         if self.environment_exists(environment_path):
             self.remove_environment(environment_path)
 
@@ -135,7 +139,17 @@ class PackageManager(IPackageManager, ABC):
 
         self._install(environment_path, content)
 
-    def _install(self, environment_path: str, environment_content: str):
+    def _install(
+        self,
+        environment_path: str,
+        environment_content: Union[
+            Mapping[str, List[str]],
+            Mapping[str, str],
+            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            None,
+        ] = None,
+    ) -> None:
         env_prefix = os.path.normpath(environment_path)
         force_remove(env_prefix)
 
@@ -158,12 +172,17 @@ class PackageManager(IPackageManager, ABC):
     def run_script(
         self,
         environment: IEnvironment,
-        script,
-        environment_variables=None,
-        argv=None,
-        pipe_output=True,
-    ):
-        if not environment.path():
+        script: str,
+        environment_variables: Union[
+            Mapping[str, str],
+            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            None,
+        ] = None,
+        argv: Union[List[str], None] = None,
+        pipe_output: bool = True,
+    ) -> None:
+        if environment.path() is None:
             raise OSError(
                 "Could not find environment %s. Is the solution installed?"
                 % environment.name()
@@ -179,7 +198,10 @@ class PackageManager(IPackageManager, ABC):
         )
 
     def is_installed(
-        self, environment_path: str, package_name, min_package_version=None
+        self,
+        environment_path: Path,
+        package_name: str,
+        min_package_version: Union[str, None] = None,
     ) -> bool:
         conda_list = self.list_environment(environment_path)
 
@@ -217,7 +239,14 @@ class PackageManager(IPackageManager, ABC):
         self,
         environment: IEnvironment,
         default_python_version: Optional[str] = default_python_version,
-    ):
+    ) -> None:
+        if environment.path() is None:
+            raise OSError(
+                "Could not find environment %s. Is the solution installed?"
+                % environment.name()
+            )
+        assert environment.path() is not None
+
         if self.environment_exists(environment.path()):
             self.update(environment)
         else:
@@ -227,7 +256,11 @@ class PackageManager(IPackageManager, ABC):
         self,
         environment: IEnvironment,
         default_python_version: Optional[str] = default_python_version,
-    ):
+    ) -> None:
+        if environment.path() is None:
+            raise OSError(
+                "Could not install environment %s. Path not set!" % environment.name()
+            )
 
         if environment.yaml_file():
             self.create_environment_from_file(
@@ -239,7 +272,7 @@ class PackageManager(IPackageManager, ABC):
             )
             self.create_environment(environment.path(), default_python_version)
 
-    def update(self, environment: IEnvironment):
+    def update(self, environment: IEnvironment) -> None:
         module_logger().debug("Skip installing environment %s..." % environment.name())
         pass  # ToDo: implement and change log message
 
@@ -247,5 +280,5 @@ class PackageManager(IPackageManager, ABC):
         self,
         environment: IEnvironment,
         default_python_version: Optional[str] = default_python_version,
-    ):
+    ) -> None:
         self.create_or_update_env(environment, default_python_version)

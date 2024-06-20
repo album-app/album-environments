@@ -49,7 +49,11 @@ class PackageManager(IPackageManager):
             if os.path.isdir(os.path.join(str(a_dir), name))
         ]
 
-    def environment_exists(self, environment_path: Union[Path, str]) -> bool:
+    def environment_exists(self, environment_path: Union[Path, str, None]) -> bool:
+        if environment_path is None:
+            module_logger().warning("No environment path given!")
+            return False
+
         environment_list = self.get_environment_list()
         environment_path = Path(environment_path)
 
@@ -64,7 +68,11 @@ class PackageManager(IPackageManager):
             else False
         )
 
-    def remove_environment(self, environment_path: Union[Path, str]) -> bool:
+    def remove_environment(self, environment_path: Union[Path, str, None]) -> bool:
+        if environment_path is None:
+            module_logger().warning("No environment path given! Skipping...")
+            return False
+
         if self.get_active_environment_path() == environment_path:
             module_logger().warning("Cannot remove active environment! Skipping...")
             return False
@@ -74,7 +82,7 @@ class PackageManager(IPackageManager):
             return False
 
         try:
-            subprocess_args = self._get_remove_env_args(Path(environment_path))
+            subprocess_args = self._get_remove_env_args(Path(environment_path))  # type: ignore
             subcommand.run(subprocess_args, log_output=False)
         except SubProcessError:
             module_logger().debug(
@@ -190,7 +198,7 @@ class PackageManager(IPackageManager):
 
         module_logger().debug("run_in_environment: %s..." % str(environment.path()))
 
-        subprocess_args = self._get_run_script_args(environment.path(), script)
+        subprocess_args = self._get_run_script_args(environment.path(), script)  # type: ignore
         if argv and len(argv) > 1:
             subprocess_args.extend(argv[1:])
         subcommand.run(
@@ -206,30 +214,30 @@ class PackageManager(IPackageManager):
         conda_list = self.list_environment(environment_path)
 
         for package in conda_list:
-            if package["name"] == package_name:
+            if package["name"] == package_name:  # type: ignore
                 if min_package_version:
-                    if package["version"] == min_package_version:
+                    if package["version"] == min_package_version:  # type: ignore
                         module_logger().debug(
                             "Package %s:%s is installed..."
                             % (package_name, min_package_version)
                         )
                         return True
-                    if package["version"] < min_package_version:
+                    if package["version"] < min_package_version:  # type: ignore
                         module_logger().debug(
                             "Package %s:%s is installed. Requirements not set! Reinstalling..."
-                            % (package_name, package["version"])
+                            % (package_name, package["version"])  # type: ignore
                         )
                         return False
-                    if package["version"] > min_package_version:
+                    if package["version"] > min_package_version:  # type: ignore
                         module_logger().debug(
                             "Package %s:%s is installed. Version should be compatible..."
-                            % (package_name, package["version"])
+                            % (package_name, package["version"])  # type: ignore
                         )
                         return True
                 else:
                     module_logger().debug(
                         "Package %s:%s is installed..."
-                        % (package_name, package["version"])
+                        % (package_name, package["version"])  # type: ignore
                     )
                     return True
 
@@ -245,9 +253,7 @@ class PackageManager(IPackageManager):
                 "Could not find environment %s. Is the solution installed?"
                 % environment.name()
             )
-        assert environment.path() is not None
-
-        if self.environment_exists(environment.path()):
+        if self.environment_exists(environment.path()):  # type: ignore
             self.update(environment)
         else:
             self.create(environment, default_python_version)
@@ -264,13 +270,16 @@ class PackageManager(IPackageManager):
 
         if environment.yaml_file():
             self.create_environment_from_file(
-                environment.yaml_file(), environment.path()
+                environment.yaml_file(),  # type: ignore
+                environment.path(),  # type: ignore
             )
         else:
             module_logger().warning(
                 "No yaml file specified. Creating Environment without dependencies!"
             )
-            self.create_environment(environment.path(), default_python_version)
+            self.create_environment(
+                environment.path(), default_python_version  # type: ignore
+            )
 
     def update(self, environment: IEnvironment) -> None:
         module_logger().debug("Skip installing environment %s..." % environment.name())

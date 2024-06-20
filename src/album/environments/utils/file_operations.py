@@ -81,15 +81,15 @@ def copy_folder(
     create_path_recursively(destination)
 
     for root, dirs, files in os.walk(folder_to_copy):
-        root = Path(root)
+        _root = Path(root)
 
         for d in dirs:
-            d = Path(d)
+            _d = Path(d)
             copy_folder(
-                root.joinpath(d), destination.joinpath(d), copy_root_folder=False
+                _root.joinpath(_d), destination.joinpath(_d), copy_root_folder=False
             )
         for fi in files:
-            copy(root.joinpath(fi), destination)
+            copy(_root.joinpath(fi), destination)
         break
 
     return destination

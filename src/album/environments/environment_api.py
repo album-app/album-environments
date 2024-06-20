@@ -1,7 +1,7 @@
 import os
 from io import StringIO
 from pathlib import Path
-from typing import List, Mapping, Union
+from typing import Dict, List, Mapping, Optional, Union
 
 import validators
 from album.runner.album_logging import get_active_logger
@@ -26,7 +26,9 @@ class EnvironmentAPI(IEnvironmentAPI):
         self._package_manager = package_manager
         self._conda_lock_manager = conda_lock_manager
 
-    def install_environment(self, environment, default_python_version) -> IEnvironment:
+    def install_environment(
+        self, environment: IEnvironment, default_python_version: str
+    ) -> None:
         return self._package_manager.install(environment, default_python_version)
 
     def remove_environment(self, environment: IEnvironment) -> bool:
@@ -36,7 +38,7 @@ class EnvironmentAPI(IEnvironmentAPI):
     def run_script(
         self,
         environment: IEnvironment,
-        script,
+        script: str,
         environment_variables: Union[
             Mapping[str, str],
             Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
@@ -45,7 +47,7 @@ class EnvironmentAPI(IEnvironmentAPI):
         ] = None,
         argv: Union[List[str], None] = None,
         pipe_output: bool = True,
-    ):
+    ) -> None:
         if environment:
             self._package_manager.run_script(
                 environment,
@@ -64,7 +66,11 @@ class EnvironmentAPI(IEnvironmentAPI):
         return self._conda_lock_manager
 
     @staticmethod
-    def _prepare_env_file(dependencies_dict, cache_path, env_name):
+    def _prepare_env_file(
+        dependencies_dict: Dict["str", Union[str, Path, StringIO]],
+        cache_path: str,
+        env_name: str,
+    ) -> Optional[Path]:  # todo: seems not to be used
         """Check how to set up an environment. Returns a path to a valid yaml file.
 
         Environment name in that file will be overwritten!
@@ -83,8 +89,8 @@ class EnvironmentAPI(IEnvironmentAPI):
         if dependencies_dict:
             if "environment_file" in dependencies_dict:
                 env_file = dependencies_dict["environment_file"]
-
-                yaml_path = cache_path.joinpath(
+                _cache_path = Path(cache_path)
+                yaml_path = _cache_path.joinpath(
                     "{arg1}{arg2}".format(arg1=env_name, arg2=".yml")
                 )
                 Path(yaml_path.parent).mkdir(parents=True, exist_ok=True)
@@ -128,15 +134,15 @@ class EnvironmentAPI(IEnvironmentAPI):
 
     def create_environment_prefer_lock_file(
         self, environment: IEnvironment, solution_lock_file: str
-    ):
-        solution_lock_file = Path(solution_lock_file)
+    ) -> None:
+        _solution_lock_file = Path(solution_lock_file)
         if (
-            solution_lock_file.is_file()
+            _solution_lock_file.is_file()
             and self._conda_lock_manager.conda_lock_executable() is not None
         ):
             get_active_logger().debug("Creating solution environment from lock file.")
             self._conda_lock_manager.create_environment_from_lockfile(
-                solution_lock_file, environment.path()
+                _solution_lock_file, environment.path()  # type: ignore
             )
         else:
             self._package_manager.install(environment)

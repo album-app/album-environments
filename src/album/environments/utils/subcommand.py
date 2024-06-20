@@ -167,8 +167,8 @@ class LogProcessing:
                 logger, message_formatter, error_logger=True
             )
         else:
-            self.info_logger = io.StringIO()
-            self.error_logger = io.StringIO()
+            self.info_logger = io.StringIO()  # type: ignore
+            self.error_logger = io.StringIO()  # type: ignore
 
     def log_info(self, s: str) -> None:
         """Log an info message."""

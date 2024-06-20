@@ -50,7 +50,7 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def _get_remove_env_args(self, path: Path) -> List[str]:
+    def _get_remove_env_args(self, path: str) -> List[str]:
         """Return the arguments for the environment removal command."""
         raise NotImplementedError
 
@@ -60,7 +60,7 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def environment_exists(self, environment_path: Union[Path, str]) -> bool:
+    def environment_exists(self, environment_path: Union[Path, str, None]) -> bool:
         """Check whether an environment already exists or not.
 
         Args:
@@ -73,7 +73,7 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
-    def remove_environment(self, environment_path: Union[Path, str]) -> bool:
+    def remove_environment(self, environment_path: Union[Path, str, None]) -> bool:
         """Remove an environment given its path.
 
         Does nothing when environment does not exist.
@@ -215,7 +215,7 @@ class IPackageManager:
 
     @abstractmethod
     def install(
-        self, environment: IEnvironment, default_python_version: Optional[str]
+        self, environment: IEnvironment, default_python_version: Optional[str] = ""
     ) -> None:
         """Create or updates an environment."""
         raise NotImplementedError

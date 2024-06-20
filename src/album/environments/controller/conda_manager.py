@@ -1,8 +1,8 @@
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional, Union
 from tempfile import _TemporaryFileWrapper
+from typing import List, Optional, Union
 
 from album.runner import album_logging
 
@@ -25,9 +25,11 @@ class CondaManager(PackageManager):
     def __init__(
         self,
         install_executable: str,
+        base_env_path: Path,
         package_manager_name: Optional[str] = "conda",
-        base_env_path: Optional[Path] = None,
     ):
+        assert package_manager_name is not None, "Package manager name must be set!"
+
         super().__init__(install_executable, package_manager_name, base_env_path)
 
     def get_active_environment_name(self) -> str:
@@ -38,7 +40,9 @@ class CondaManager(PackageManager):
         environment_info = self.get_info()
         return environment_info["active_prefix"]
 
-    def _get_env_create_args(self, env_file: _TemporaryFileWrapper[str], env_prefix: str) -> List[str]:
+    def _get_env_create_args(
+        self, env_file: _TemporaryFileWrapper[str], env_prefix: str
+    ) -> List[str]:
         subprocess_args = [
             self.get_install_environment_executable(),
             "env",
@@ -83,7 +87,7 @@ class CondaManager(PackageManager):
             ]
         return subprocess_args
 
-    def _get_remove_env_args(self, path: Path) -> List[str]:
+    def _get_remove_env_args(self, path: str) -> List[str]:
         subprocess_args = [
             self.get_install_environment_executable(),
             "env",

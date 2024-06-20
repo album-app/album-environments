@@ -29,12 +29,12 @@ class IEnvironmentAPI:
     @abstractmethod
     def install_environment(
         self, environment: IEnvironment, default_python_version: str
-    ) -> IEnvironment:
+    ) -> None:
         """Install an environment."""
         raise NotImplementedError
 
     @abstractmethod
-    def remove_environment(self, environment: IEnvironment) -> None:
+    def remove_environment(self, environment: IEnvironment) -> bool:
         """Remove an environment."""
         raise NotImplementedError
 

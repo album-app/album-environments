@@ -35,7 +35,7 @@ class IPackageManager:
 
     @abstractmethod
     def _get_env_create_args(
-        self, env_file: _TemporaryFileWrapper[str], env_prefix: str
+        self, env_file: Union[_TemporaryFileWrapper], env_prefix: str
     ) -> List[str]:
         """Return the arguments for the environment creation command."""
         raise NotImplementedError
@@ -43,7 +43,7 @@ class IPackageManager:
     @abstractmethod
     def _get_run_script_args(
         self,
-        environment_path: Union[Path, _TemporaryFileWrapper[str]],
+        environment_path: Union[Path, _TemporaryFileWrapper],
         script_full_path: str,
     ) -> List[str]:
         """Return the arguments for a conda run in solution env call."""

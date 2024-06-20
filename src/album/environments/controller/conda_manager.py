@@ -41,7 +41,7 @@ class CondaManager(PackageManager):
         return environment_info["active_prefix"]
 
     def _get_env_create_args(
-        self, env_file: _TemporaryFileWrapper[str], env_prefix: str
+        self, env_file: Union[_TemporaryFileWrapper], env_prefix: str
     ) -> List[str]:
         subprocess_args = [
             self.get_install_environment_executable(),
@@ -57,7 +57,7 @@ class CondaManager(PackageManager):
 
     def _get_run_script_args(
         self,
-        environment_path: Union[Path, _TemporaryFileWrapper[str]],
+        environment_path: Union[Path, _TemporaryFileWrapper],
         script_full_path: str,
     ) -> List[str]:
         if sys.platform == "win32" or sys.platform == "cygwin":

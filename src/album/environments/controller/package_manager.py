@@ -1,7 +1,6 @@
 import json
 import os
 import tempfile
-from abc import ABCMeta
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
 
@@ -19,7 +18,6 @@ module_logger = album_logging.get_active_logger
 
 class PackageManager(IPackageManager):
 
-    __metaclass__ = ABCMeta
     default_python_version = "3.10"
 
     def __init__(
@@ -151,10 +149,7 @@ class PackageManager(IPackageManager):
         self,
         environment_path: str,
         environment_content: Union[
-            Mapping[str, List[str]],
-            Mapping[str, str],
-            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping,
             None,
         ] = None,
     ) -> None:
@@ -182,9 +177,7 @@ class PackageManager(IPackageManager):
         environment: IEnvironment,
         script: str,
         environment_variables: Union[
-            Mapping[str, str],
-            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping,
             None,
         ] = None,
         argv: Union[List[str], None] = None,
@@ -263,23 +256,20 @@ class PackageManager(IPackageManager):
         environment: IEnvironment,
         default_python_version: Optional[str] = default_python_version,
     ) -> None:
-        if environment.path() is None:
+        env_path = environment.path()
+        if env_path is None:
             raise OSError(
                 "Could not install environment %s. Path not set!" % environment.name()
             )
 
         if environment.yaml_file():
-            self.create_environment_from_file(
-                environment.yaml_file(),  # type: ignore
-                environment.path(),  # type: ignore
-            )
+            self.create_environment_from_file(environment.yaml_file(), str(env_path))
         else:
             module_logger().warning(
                 "No yaml file specified. Creating Environment without dependencies!"
             )
-            self.create_environment(
-                environment.path(), default_python_version  # type: ignore
-            )
+
+            self.create_environment(str(env_path), default_python_version)
 
     def update(self, environment: IEnvironment) -> None:
         module_logger().debug("Skip installing environment %s..." % environment.name())

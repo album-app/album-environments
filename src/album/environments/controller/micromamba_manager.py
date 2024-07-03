@@ -1,8 +1,8 @@
 """Module for handling micromamba environments."""
 import os
 import sys
+import tempfile
 from pathlib import Path
-from tempfile import _TemporaryFileWrapper
 from typing import List, Union
 
 from album.environments.controller.package_manager import PackageManager
@@ -37,7 +37,7 @@ class MicromambaManager(PackageManager):
         return path
 
     def _get_env_create_args(
-        self, env_file: Union[_TemporaryFileWrapper], env_prefix: str
+        self, env_file: tempfile.TemporaryFile, env_prefix: str
     ) -> List[str]:
         subprocess_args = [
             self.get_install_environment_executable(),
@@ -52,7 +52,7 @@ class MicromambaManager(PackageManager):
 
     def _get_run_script_args(
         self,
-        environment_path: Union[Path, _TemporaryFileWrapper, str],
+        environment_path: Union[Path, tempfile.TemporaryFile],
         script_full_path: str,
     ) -> List[str]:
         if sys.platform == "win32" or sys.platform == "cygwin":

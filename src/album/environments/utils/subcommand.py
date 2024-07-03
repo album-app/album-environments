@@ -1,6 +1,5 @@
 """Module for running a command in a subprocess and logging its output."""
 import io
-import os
 import re
 import subprocess
 import sys
@@ -190,9 +189,7 @@ def run(
     message_formatter: Union[str, None] = None,
     pipe_output: bool = True,
     env: Union[
-        Mapping[str, str],
-        Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-        Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        Mapping,
         None,
     ] = None,
 ) -> Union[int, subprocess.CompletedProcess]:
@@ -242,9 +239,7 @@ def _run_process(
     log: LogProcessing,
     pipe_output: bool,
     env: Union[
-        Mapping[str, str],
-        Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-        Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        Mapping,
         None,
     ],
 ) -> Union[int, subprocess.CompletedProcess]:
@@ -278,9 +273,7 @@ def _run_process(
 def check_output(
     command: List[str],
     env: Union[
-        Mapping[str, str],
-        Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-        Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+        Mapping,
         None,
     ] = None,
 ) -> str:

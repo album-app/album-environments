@@ -1,4 +1,3 @@
-import os
 from io import StringIO
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
@@ -26,9 +25,7 @@ class EnvironmentAPI(IEnvironmentAPI):
         self._package_manager = package_manager
         self._conda_lock_manager = conda_lock_manager
 
-    def install_environment(
-        self, environment: IEnvironment, default_python_version: str
-    ) -> None:
+    def install_environment(self, environment: IEnvironment, default_python_version: Optional[str]) -> None:
         return self._package_manager.install(environment, default_python_version)
 
     def remove_environment(self, environment: IEnvironment) -> bool:
@@ -40,9 +37,7 @@ class EnvironmentAPI(IEnvironmentAPI):
         environment: IEnvironment,
         script: str,
         environment_variables: Union[
-            Mapping[str, str],
-            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping,
             None,
         ] = None,
         argv: Union[List[str], None] = None,

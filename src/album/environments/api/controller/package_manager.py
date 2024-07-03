@@ -1,8 +1,8 @@
 """Interface for package managers, like Conda, Mamba, Micromamba, etc."""
-import os
+
+import tempfile
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from tempfile import _TemporaryFileWrapper
 from typing import Dict, List, Mapping, Optional, Union
 
 from album.environments.api.model.environment import IEnvironment
@@ -35,7 +35,7 @@ class IPackageManager:
 
     @abstractmethod
     def _get_env_create_args(
-        self, env_file: Union[_TemporaryFileWrapper], env_prefix: str
+        self, env_file: tempfile.TemporaryFile, env_prefix: str
     ) -> List[str]:
         """Return the arguments for the environment creation command."""
         raise NotImplementedError
@@ -43,7 +43,7 @@ class IPackageManager:
     @abstractmethod
     def _get_run_script_args(
         self,
-        environment_path: Union[Path, _TemporaryFileWrapper],
+        environment_path: Union[Path, tempfile.TemporaryFile],
         script_full_path: str,
     ) -> List[str]:
         """Return the arguments for a conda run in solution env call."""
@@ -160,9 +160,7 @@ class IPackageManager:
         environment: IEnvironment,
         script: str,
         environment_variables: Union[
-            Mapping[str, str],
-            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping,
             None,
         ] = None,
         argv: Union[List[str], None] = None,

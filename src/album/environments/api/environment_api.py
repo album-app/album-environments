@@ -1,5 +1,4 @@
 """API class that exposes functionality to the album core."""
-import os
 from abc import ABCMeta, abstractmethod
 from typing import List, Mapping, Union
 
@@ -44,9 +43,7 @@ class IEnvironmentAPI:
         environment: IEnvironment,
         script: str,
         environment_variables: Union[
-            Mapping[str, str],
-            Mapping[bytes, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
-            Mapping[str, Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]],
+            Mapping,
             None,
         ] = None,
         argv: Union[List[str], None] = None,

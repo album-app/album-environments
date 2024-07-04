@@ -222,3 +222,13 @@ class IPackageManager:
     ) -> None:
         """Create or updates an environment."""
         raise NotImplementedError
+
+    @abstractmethod
+    def _get_pypi_list_args(self, env_prefix: str) -> List[str]:
+        """Return the arguments for the pypi list command."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_installed_pypi_packages(self, env_prefix: Path) -> Dict[str, str]:
+        """Return the list of installed pypi packages."""
+        raise NotImplementedError

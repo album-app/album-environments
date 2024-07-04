@@ -2,7 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from album.environments.controller.mamba_manager import MambaManager
 from album.environments.model.environment import Environment
@@ -273,6 +273,20 @@ dependencies:
 
         create_mock.assert_called_once_with(environment, "TestVersion")
 
-
-if __name__ == "__main__":
-    unittest.main()
+    @patch("album.environments.controller.package_manager.PackageManager.list_environment")
+    def test_get_package_version(self, list_environment_mock):
+        list_environment_mock.return_value = json.loads(
+            """[
+                {
+                    "base_url": "https://repo.anaconda.com/pkgs/main",
+                    "build_number": 3,
+                    "build_string": "hdb3f193_3",
+                    "channel": "pkgs/main",
+                    "dist_name": "python-3.9.5-hdb3f193_3",
+                    "name": "python",
+                    "platform": "linux-64",
+                    "version": "3.9.5"
+                }
+            ]"""
+        )
+        self.assertEqual("3.9.5", self.mamba.get_package_version(Path("aPath"), "python"))

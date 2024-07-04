@@ -74,3 +74,13 @@ class IEnvironmentAPI:
     def get_conda_lock_manager(self) -> ICondaLockManager:
         """Get the conda lock manager."""
         raise NotImplementedError
+
+    @abstractmethod
+    def get_package_version(
+        self, environment: IEnvironment, package: str, version: str
+    ) -> str:
+        """Get the version of a package in the environment.
+
+        If the environment does not exist or the package is not installed, str will be empty.
+
+        """

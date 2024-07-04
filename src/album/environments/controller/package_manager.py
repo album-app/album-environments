@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
 
 import yaml
+from album.core import __version__ as album_version
 from album.runner import album_logging
 
 from album.environments.api.controller.package_manager import IPackageManager
@@ -145,6 +146,26 @@ class PackageManager(IPackageManager):
 
         self._install(environment_path, content)
 
+        # check for album as a dependency and warn if present
+        album_installed_version = self.get_package_version(
+            Path(environment_path), "album"
+        )
+        if album_installed_version != album_version:
+            module_logger().error(
+                "Album is installed in the solution environment with a different version. They are incompatible!"
+                "Update the solution environment to this version of album if you want to use it!"
+            )
+            raise ValueError(
+                "Album is installed in the solution environment with a different version. They are incompatible!"
+                "Update the solution environment to this version of album if you want to use it!"
+            )
+        if album_installed_version == album_version:
+            module_logger().warning(
+                "Album is installed in the solution environment. "
+                "This might cause issues when sharing the same database!"
+                "Only proceed if you know what you are doing!"
+            )
+
     def _install(
         self,
         environment_path: str,
@@ -198,15 +219,23 @@ class PackageManager(IPackageManager):
             subprocess_args, pipe_output=pipe_output, env=environment_variables
         )
 
+    def get_package_version(self, environment_path: Path, package_name: str) -> str:
+        env_list = self.list_environment(environment_path)
+
+        for package in env_list:
+            if package["name"] == package_name:  # type: ignore
+                return package["version"]  # type: ignore
+        return ""
+
     def is_installed(
         self,
         environment_path: Path,
         package_name: str,
         min_package_version: Union[str, None] = None,
     ) -> bool:
-        conda_list = self.list_environment(environment_path)
+        env_list = self.list_environment(environment_path)
 
-        for package in conda_list:
+        for package in env_list:
             if package["name"] == package_name:  # type: ignore
                 if min_package_version:
                     if package["version"] == min_package_version:  # type: ignore
@@ -257,13 +286,14 @@ class PackageManager(IPackageManager):
         default_python_version: Optional[str] = default_python_version,
     ) -> None:
         env_path = environment.path()
+        yml_path = environment.yaml_file()
         if env_path is None:
             raise OSError(
                 "Could not install environment %s. Path not set!" % environment.name()
             )
 
-        if environment.yaml_file():
-            self.create_environment_from_file(environment.yaml_file(), str(env_path))
+        if yml_path is not None:
+            self.create_environment_from_file(yml_path, str(env_path))
         else:
             module_logger().warning(
                 "No yaml file specified. Creating Environment without dependencies!"

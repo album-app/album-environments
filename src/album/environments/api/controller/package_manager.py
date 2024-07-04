@@ -183,13 +183,18 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
+    def get_package_version(self, environment_path: Path, package_name: str) -> str:
+        """Return the installed version of a package."""
+        raise NotImplementedError
+
+    @abstractmethod
     def is_installed(
         self,
         environment_path: Path,
         package_name: str,
         min_package_version: Union[str, None] = None,
     ) -> bool:
-        """Check if package is installed in a certain version."""
+        """Check if package is installed compatible to a certain version."""
         raise NotImplementedError
 
     @abstractmethod

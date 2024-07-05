@@ -183,13 +183,18 @@ class IPackageManager:
         raise NotImplementedError
 
     @abstractmethod
+    def get_package_version(self, environment_path: Path, package_name: str) -> str:
+        """Return the installed version of a package."""
+        raise NotImplementedError
+
+    @abstractmethod
     def is_installed(
         self,
         environment_path: Path,
         package_name: str,
         min_package_version: Union[str, None] = None,
     ) -> bool:
-        """Check if package is installed in a certain version."""
+        """Check if package is installed compatible to a certain version."""
         raise NotImplementedError
 
     @abstractmethod
@@ -216,4 +221,14 @@ class IPackageManager:
         self, environment: IEnvironment, default_python_version: Optional[str] = ""
     ) -> None:
         """Create or updates an environment."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _get_pypi_list_args(self, env_prefix: str) -> List[str]:
+        """Return the arguments for the pypi list command."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_installed_pypi_packages(self, env_prefix: Path) -> Dict[str, str]:
+        """Return the list of installed pypi packages."""
         raise NotImplementedError

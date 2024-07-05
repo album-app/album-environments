@@ -20,11 +20,11 @@ class PackageManagerDetector:
 
     def __init__(
         self,
-        base_env_path,
-        micromamba_path=None,
-        conda_path=None,
-        mamba_path=None,
-        conda_lock_path=None,
+        base_env_path: Path,
+        micromamba_path: Optional[str] = None,
+        conda_path: Optional[str] = None,
+        mamba_path: Optional[str] = None,
+        conda_lock_path: Optional[str] = None,
     ):
         """Initialize the package manager detector."""
         self._conda_executable = None
@@ -32,8 +32,8 @@ class PackageManagerDetector:
         self._micromamba_executable = None
         self._conda_lock_executable = None
 
-        # explicitly defined package manager
-        if micromamba_path is not None:
+        # explicitly defined valid package manager
+        if micromamba_path is not None and Path(micromamba_path).is_file():
             self._micromamba_executable = micromamba_path
             get_active_logger().debug(
                 "Using micromamba executable: %s", self._micromamba_executable
@@ -56,8 +56,8 @@ class PackageManagerDetector:
             get_active_logger().debug(
                 "Using mamba executable: %s", self._mamba_executable
             )
-        else:  # search for a package manager with default values
-            self.search_package_manager(micromamba_path)
+        else:  # search for a package manager
+            self.search_package_manager()
 
         # check for conda-lock
         if conda_lock_path is None:
@@ -71,7 +71,7 @@ class PackageManagerDetector:
         )
 
     @staticmethod
-    def search_lock_manager() -> str:
+    def search_lock_manager() -> Optional[str]:
         """Search for the conda-lock executable."""
         conda_lock_executable = shutil.which("conda-lock")
         if conda_lock_executable:
@@ -84,41 +84,32 @@ class PackageManagerDetector:
             )
         return conda_lock_executable
 
-    def search_package_manager(self, micromamba_path):
+    def search_package_manager(self) -> None:
         """Search for the package manager."""
-        if (
-            micromamba_path and Path(micromamba_path).is_file()
-        ):  # look in default micromamba location
-            # points to the executable, e.g. /path/bin/micromamba
-            self._micromamba_executable = micromamba_path
+        # search for micromamba
+        self._micromamba_executable = shutil.which("micromamba")
+        if self._micromamba_executable is not None:
             get_active_logger().debug(
                 "Using micromamba executable: %s", self._micromamba_executable
             )
         else:
-            # search for micromamba
-            self._micromamba_executable = shutil.which("micromamba")
-            if self._micromamba_executable is not None:
-                get_active_logger().debug(
-                    "Using micromamba executable: %s", self._micromamba_executable
-                )
-            else:
-                # search for conda
-                self._conda_executable = shutil.which("conda")
-                if self._conda_executable is not None:
-                    # additionally search for mamba
-                    self._mamba_executable = shutil.which("mamba")
-                    if self._mamba_executable is not None:
-                        get_active_logger().debug(
-                            "Using mamba executable: %s", self._mamba_executable
-                        )
-                    else:
-                        get_active_logger().debug(
-                            "Using conda executable: %s", self._conda_executable
-                        )
+            # search for conda
+            self._conda_executable = shutil.which("conda")
+            if self._conda_executable is not None:
+                # additionally search for mamba
+                self._mamba_executable = shutil.which("mamba")
+                if self._mamba_executable is not None:
+                    get_active_logger().debug(
+                        "Using mamba executable: %s", self._mamba_executable
+                    )
                 else:
-                    raise RuntimeError("No package manager found!")
+                    get_active_logger().debug(
+                        "Using conda executable: %s", self._conda_executable
+                    )
+            else:
+                raise RuntimeError("No package manager found!")
 
-    def create_package_manager(self, base_env_path) -> IPackageManager:
+    def create_package_manager(self, base_env_path: Path) -> IPackageManager:
         """Create the package manager objet."""
         if self._micromamba_executable:
             return MicromambaManager(
@@ -127,6 +118,8 @@ class PackageManagerDetector:
         elif self._mamba_executable:
             return MambaManager(self._mamba_executable, base_env_path=base_env_path)
         else:
+            if self._conda_executable is None:
+                raise RuntimeError("No package manager found!")
             return CondaManager(self._conda_executable, base_env_path=base_env_path)
 
     def get_conda_lock_manager(self) -> ICondaLockManager:

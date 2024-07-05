@@ -91,3 +91,15 @@ class MicromambaManager(PackageManager):
             "--all",
         ]
         return subprocess_args
+
+    def _get_pypi_list_args(self, env_prefix: str) -> List[str]:
+        subprocess_args = [
+            self.get_install_environment_executable(),
+            "run",
+            "--prefix",
+            os.path.normpath(env_prefix),
+            "pip",
+            "list",
+            "--format=json",
+        ]
+        return subprocess_args

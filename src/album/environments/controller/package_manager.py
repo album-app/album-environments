@@ -5,15 +5,13 @@ from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
 
 import yaml
-from album.runner import album_logging
+from album.runner.album_logging import get_active_logger
 
 from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.model.environment import IEnvironment
 from album.environments.utils import subcommand
 from album.environments.utils.file_operations import force_remove
 from album.environments.utils.subcommand import SubProcessError
-
-module_logger = album_logging.get_active_logger
 
 
 class PackageManager(IPackageManager):
@@ -49,7 +47,7 @@ class PackageManager(IPackageManager):
 
     def environment_exists(self, environment_path: Union[Path, str, None]) -> bool:
         if environment_path is None:
-            module_logger().warning("No environment path given!")
+            get_active_logger().warning("No environment path given!")
             return False
 
         environment_list = self.get_environment_list()
@@ -68,22 +66,22 @@ class PackageManager(IPackageManager):
 
     def remove_environment(self, environment_path: Union[Path, str, None]) -> bool:
         if environment_path is None:
-            module_logger().warning("No environment path given! Skipping...")
+            get_active_logger().warning("No environment path given! Skipping...")
             return False
 
         if self.get_active_environment_path() == environment_path:
-            module_logger().warning("Cannot remove active environment! Skipping...")
+            get_active_logger().warning("Cannot remove active environment! Skipping...")
             return False
 
         if not self.environment_exists(environment_path):
-            module_logger().warning("Environment does not exist! Skipping...")
+            get_active_logger().warning("Environment does not exist! Skipping...")
             return False
 
         try:
             subprocess_args = self._get_remove_env_args(Path(environment_path))  # type: ignore
             subcommand.run(subprocess_args, log_output=False)
         except SubProcessError:
-            module_logger().debug(
+            get_active_logger().debug(
                 "Can't delete environment via command line call, deleting the folder next..."
             )
         force_remove(environment_path)
@@ -121,7 +119,7 @@ class PackageManager(IPackageManager):
                 )
 
             env_content = {
-                "channels": ["defaults"],
+                "channels": ["conda-forge"],
                 "dependencies": ["python=%s" % python_version],
             }
             self._install(environment_path, env_content)
@@ -166,7 +164,7 @@ class PackageManager(IPackageManager):
         except RuntimeError as e:
             # cleanup after failed installation
             if self.environment_exists(environment_path):
-                module_logger().debug("Cleanup failed environment creation...")
+                get_active_logger().debug("Cleanup failed environment creation...")
                 self.remove_environment(environment_path)
             raise RuntimeError("Command failed due to reasons above!") from e
         finally:
@@ -189,7 +187,7 @@ class PackageManager(IPackageManager):
                 % environment.name()
             )
 
-        module_logger().debug("run_in_environment: %s..." % str(environment.path()))
+        get_active_logger().debug("run_in_environment: %s..." % str(environment.path()))
 
         subprocess_args = self._get_run_script_args(environment.path(), script)  # type: ignore
         if argv and len(argv) > 1:
@@ -198,37 +196,50 @@ class PackageManager(IPackageManager):
             subprocess_args, pipe_output=pipe_output, env=environment_variables
         )
 
+    def get_package_version(self, environment_path: Path, package_name: str) -> str:
+        env_list = self.list_environment(environment_path)
+
+        for package in env_list:
+            if package["name"] == package_name:  # type: ignore
+                return package["version"]  # type: ignore
+
+        pypi_packages = self.get_installed_pypi_packages(environment_path)
+        for pypi_package in pypi_packages:
+            if pypi_package["name"] == package_name:  # type: ignore
+                return pypi_package["version"]  # type: ignore
+        return ""
+
     def is_installed(
         self,
         environment_path: Path,
         package_name: str,
         min_package_version: Union[str, None] = None,
     ) -> bool:
-        conda_list = self.list_environment(environment_path)
+        env_list = self.list_environment(environment_path)
 
-        for package in conda_list:
+        for package in env_list:
             if package["name"] == package_name:  # type: ignore
                 if min_package_version:
                     if package["version"] == min_package_version:  # type: ignore
-                        module_logger().debug(
+                        get_active_logger().debug(
                             "Package %s:%s is installed..."
                             % (package_name, min_package_version)
                         )
                         return True
                     if package["version"] < min_package_version:  # type: ignore
-                        module_logger().debug(
+                        get_active_logger().debug(
                             "Package %s:%s is installed. Requirements not set! Reinstalling..."
                             % (package_name, package["version"])  # type: ignore
                         )
                         return False
                     if package["version"] > min_package_version:  # type: ignore
-                        module_logger().debug(
+                        get_active_logger().debug(
                             "Package %s:%s is installed. Version should be compatible..."
                             % (package_name, package["version"])  # type: ignore
                         )
                         return True
                 else:
-                    module_logger().debug(
+                    get_active_logger().debug(
                         "Package %s:%s is installed..."
                         % (package_name, package["version"])  # type: ignore
                     )
@@ -257,22 +268,25 @@ class PackageManager(IPackageManager):
         default_python_version: Optional[str] = default_python_version,
     ) -> None:
         env_path = environment.path()
+        yml_path = environment.yaml_file()
         if env_path is None:
             raise OSError(
                 "Could not install environment %s. Path not set!" % environment.name()
             )
 
-        if environment.yaml_file():
-            self.create_environment_from_file(environment.yaml_file(), str(env_path))
+        if yml_path is not None:
+            self.create_environment_from_file(yml_path, str(env_path))
         else:
-            module_logger().warning(
+            get_active_logger().warning(
                 "No yaml file specified. Creating Environment without dependencies!"
             )
 
             self.create_environment(str(env_path), default_python_version)
 
     def update(self, environment: IEnvironment) -> None:
-        module_logger().debug("Skip installing environment %s..." % environment.name())
+        get_active_logger().debug(
+            "Skip installing environment %s..." % environment.name()
+        )
         pass  # ToDo: implement and change log message
 
     def install(
@@ -281,3 +295,17 @@ class PackageManager(IPackageManager):
         default_python_version: Optional[str] = default_python_version,
     ) -> None:
         self.create_or_update_env(environment, default_python_version)
+
+    def get_installed_pypi_packages(self, environment_path: Path) -> Dict[str, str]:
+        if self.is_installed(environment_path, "pip"):
+            subprocess_args = self._get_pypi_list_args(str(environment_path))
+            try:
+                # todo: check if correct. Seems to list more packages than installed
+                output = subcommand.check_output(subprocess_args)
+                return json.loads(output)
+            except RuntimeError as e:
+                get_active_logger().error(
+                    "Error while listing installed packages in environment: %s", e
+                )
+                return {}
+        return {}

@@ -32,6 +32,7 @@ class MicromambaManager(PackageManager):
         return env_name
 
     def get_active_environment_path(self) -> str:
+        # todo: seems not to work within pycharm, but works in the terminal. Investigate!
         environment_info = self.get_info()
         path = environment_info["env location"]
         return path

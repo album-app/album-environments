@@ -118,4 +118,6 @@ class CondaLockManager(ICondaLockManager):
         ]
 
     def conda_lock_executable(self) -> str:
+        if self._conda_lock_executable is None:
+            raise RuntimeError("No conda-lock executable found!")
         return self._conda_lock_executable

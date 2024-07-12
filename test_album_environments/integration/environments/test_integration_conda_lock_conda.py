@@ -9,7 +9,7 @@ from test_album_environments.integration.environments.test_integration_conda_loc
 
 class TestIntegrationCondaLockConda(_TestIntegrationCondaLock):
     def init_env_handler(self) -> IEnvironmentAPI:
-        return init_environment_handler(self.test_base, conda_path="conda")
+        return init_environment_handler(self.test_base)
 
     def test_create_conda_lockfile(self):
         super().create_conda_lockfile()

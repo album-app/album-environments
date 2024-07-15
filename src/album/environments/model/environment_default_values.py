@@ -1,6 +1,5 @@
 import os
 from enum import Enum
-from pathlib import Path
 
 
 class EnvironmentDefaultValues(Enum):
@@ -16,24 +15,23 @@ class EnvironmentDefaultValues(Enum):
     micromamba_url_osx_X86_64 = "https://micro.mamba.pm/api/micromamba/osx-64/1.5.6"
     micromamba_url_osx_ARM64 = "https://micro.mamba.pm/api/micromamba/osx-arm64/1.5.6"
 
+    # need self-hosted installation for windows due to unzip issues
     micromamba_url_windows = "https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/win-64_micromamba-1.5.6-0.zip?ref_type=heads&inline=false"  # noqa: E501
-    micromamba_base_path = (
+    micromamba_base_prefix = (
         "micromamba"  # base folder prefix where micromamba is installed into
     )
-    base_cache_path = os.getenv("ALBUM_BASE_CACHE_PATH", Path.home().joinpath(".album"))
 
     # micromamba
-    micromamba_default_command = "micromamba"
-    micromamba_path = os.getenv("ALBUM_MICROMAMBA_PATH", micromamba_default_command)
+    micromamba_path = os.getenv("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH")
 
-    # mamba
-    mamba_default_command = "mamba"
-    mamba_path = os.getenv("ALBUM_MAMBA_PATH")
+    # mamba, feature for debugging only
+    mamba_path = os.getenv("ENVIRONMENT_DEBUGGING_MAMBA_PATH")
 
-    # conda
-    conda_default_command = "conda"  # default conda executable
-    conda_path = os.getenv("ALBUM_CONDA_PATH")
+    # conda, feature for debugging only
+    conda_path = os.getenv("ENVIRONMENT_DEBUGGING_CONDA_PATH")
 
     # conda-lock
-    conda_lock_default_command = "conda-lock"  # default conda-lock executable
-    conda_lock_path = os.getenv("ALBUM_CONDA_LOCK_PATH")
+    conda_lock_path = os.getenv("ENVIRONMENT_CONDA_LOCK_PATH")
+
+    # environment base path
+    environment_install_path = os.getenv("ENVIRONMENT_INSTALLATION_PATH")

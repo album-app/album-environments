@@ -22,7 +22,7 @@
     - "$Env:MAMBA_ROOT_PREFIX=(Join-Path -Path (Get-Location) -ChildPath micromamba)"
     - '$Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba\Library\bin\micromamba.exe)'
     - "$Env:USERPROFILE=$pwd"
-    - '$Env:ALBUM_MICROMAMBA_PATH=(Join-Path -Path ($CI_PROJECT_DIR) -ChildPath micromamba\Library\bin\micromamba.exe)'
+    - '$Env:ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=(Join-Path -Path (Get-Location) -ChildPath micromamba\Library\bin\micromamba.exe)'
     - '$oldProgressPreference = $progressPreference; $progressPreference = "SilentlyContinue";'
     - "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" # set Security download protocol to avoid https errors
     - "if(-Not (Test-Path $7ZIP_EXE)) {if(-Not (Test-Path $7ZIP_INSTALLER)){Invoke-Webrequest -URI https://www.7-zip.org/a/7z2201-x64.exe -OutFile $7ZIP_INSTALLER}}"
@@ -61,6 +61,7 @@
     - 'if(-Not (Test-Path .\download\miniconda3.exe)) {echo "Downloading miniconda executable..."; Invoke-WebRequest -UseBasicParsing -Uri $env:MINICONDA_URL -OutFile .\download\miniconda3.exe} else {echo "Executable found in .\download\miniconda3.exe. Reusing..."}' # download the miniconda windows executable
     - 'echo $env:MINICONDA_URL | Out-File -FilePath .\download\miniconda_url.txt' # cache version information
     - 'Get-ChildItem -Path .\download' # show download folder content
+    - '$Env:ENVIRONMENT_DEBUGGING_MAMBA_PATH=(Join-Path -Path ($PWD) -ChildPath miniconda\condabin\mamba.exe)'
     - '$env:PATH += ";$pwd\miniconda\condabin"' # set path information
     - '$env:PATH += ";$pwd\miniconda\Scripts"'
     - '$env:PATH += ";$pwd\miniconda\Library\bin"'
@@ -98,6 +99,7 @@
     - 'if(-Not (Test-Path .\download\miniconda3.exe)) {echo "Downloading miniconda executable..."; Invoke-WebRequest -UseBasicParsing -Uri $env:MINICONDA_URL -OutFile .\download\miniconda3.exe} else {echo "Executable found in .\download\miniconda3.exe. Reusing..."}' # download the miniconda windows executable
     - 'echo $env:MINICONDA_URL | Out-File -FilePath .\download\miniconda_url.txt' # cache version information
     - 'Get-ChildItem -Path .\download' # show download folder content
+    - '$Env:ENVIRONMENT_DEBUGGING_CONDA_PATH=(Join-Path -Path ($PWD) -ChildPath miniconda\condabin\conda.exe)'
     - '$env:PATH += ";$pwd\miniconda\condabin"' # set path information
     - '$env:PATH += ";$pwd\miniconda\Scripts"'
     - '$env:PATH += ";$pwd\miniconda\Library\bin"'
@@ -137,7 +139,7 @@
     - apt install -y curl
     - apt install -y bzip2
     - export MAMBA_ROOT_PREFIX=$CI_PROJECT_DIR/micromamba
-    - export ALBUM_MICROMAMBA_PATH=$CI_PROJECT_DIR/bin/micromamba
+    - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$CI_PROJECT_DIR/bin/micromamba
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_LINUX_X86_64.tar.bz2?inline=false | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
@@ -185,6 +187,7 @@
     - python -c "import shutil; print(shutil.which(\"conda\"))"
     - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip list
+    - export ENVIRONMENT_DEBUGGING_CONDA_PATH=$(which mamba)
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
     CONDA_ENV_NAME: album-environments
@@ -220,6 +223,7 @@
     - python -c "import shutil; print(shutil.which(\"mamba\"))"
     - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip list
+    - export ENVIRONMENT_DEBUGGING_MAMBA_PATH=$(which mamba)
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
     CONDA_ENV_NAME: album-environments
@@ -248,7 +252,7 @@
     - echo $tmpdir
     - echo $tmpdir > /tmp/tmpdir
     - export MAMBA_ROOT_PREFIX=$tmpdir/micromamba
-    - export ALBUM_MICROMAMBA_PATH=$tmpdir/bin/micromamba
+    - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$tmpdir/bin/micromamba
     - mkdir -p $tmpdir/bin/
     - curl -Ls https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_MACOS_X86_64.tar.bz2?inline=false | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - eval "$($tmpdir/bin/micromamba shell hook -s posix)"
@@ -291,6 +295,7 @@
     - python -c "import shutil; print(shutil.which(\"conda\"))"
     - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip list
+    - export ENVIRONMENT_DEBUGGING_CONDA_PATH=$(which conda)
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir
@@ -326,6 +331,7 @@
     - python -c "import shutil; print(shutil.which(\"mamba\"))"
     - env -0 | sort -z | tr '\0' '\n' | grep -i album
     - pip list
+    - export ENVIRONMENT_DEBUGGING_MAMBA_PATH=$(which mamba)
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir

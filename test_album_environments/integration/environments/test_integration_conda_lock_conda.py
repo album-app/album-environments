@@ -8,8 +8,13 @@ from test_album_environments.integration.environments.test_integration_conda_loc
 
 
 class TestIntegrationCondaLockConda(_TestIntegrationCondaLock):
+    test_environment_name = "conda_test_environment"
+
     def init_env_handler(self) -> IEnvironmentAPI:
-        return init_environment_handler(self.test_base)
+        # uses conda from CICD path
+        return init_environment_handler(
+             env_base_path=self.test_base_envs, installation_base_path=self.test_base_dir.name
+        )
 
     def test_create_conda_lockfile(self):
         super().create_conda_lockfile()

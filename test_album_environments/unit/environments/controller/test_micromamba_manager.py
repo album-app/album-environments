@@ -1,5 +1,4 @@
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,12 +15,12 @@ class TestMicromambaManager(TestCommon):
     def setUp(self):
         super().setUp()
         self.test_base_dir = tempfile.TemporaryDirectory()
-        self.test_base = Path(self.test_base_dir.name)
+        self.test_base = Path(self.test_base_dir.name).joinpath("envs")
         self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.micromamba = init_environment_handler(self.test_base, micromamba_path=os.getenv("ALBUM_MICROMAMBA_PATH")).get_package_manager()
+        self.micromamba = init_environment_handler(self.test_base, self.test_base.parent).get_package_manager()
 
     def tearDown(self) -> None:
         if self.micromamba.environment_exists(self.test_environment_path):
@@ -35,9 +34,7 @@ class TestMicromambaManager(TestCommon):
 
     def test_get_environment_list(self):
         base_dir = self.test_base
-        expected = list()
-        expected.append(base_dir.joinpath("envName1").resolve())
-        expected.append(base_dir.joinpath("envName2").resolve())
+        expected = [base_dir.joinpath("envName1").resolve(), base_dir.joinpath("envName2").resolve()]
         Path(expected[0]).joinpath("somefile").mkdir(parents=True)
         Path(expected[1]).joinpath("somefile").mkdir(parents=True)
 

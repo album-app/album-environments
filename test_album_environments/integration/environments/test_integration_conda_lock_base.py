@@ -7,13 +7,11 @@ from test_album_environments.test_common import TestCommon
 
 
 class _TestIntegrationCondaLock(TestCommon):
+    """Base class for testing conda lock file creation with various package manager."""
+
     def setUp(self):
         super().setUp()
-        self.tmp_dir_obj = tempfile.TemporaryDirectory()
-        self.test_base = Path(self.tmp_dir_obj.name)
-        self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
-        self.tmp_dir = Path(tempfile.TemporaryDirectory().name)
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
+        self.test_environment_path = self.test_base_envs.joinpath(self.test_environment_name)
         self.env_handler = self.init_env_handler()
 
     def init_env_handler(self) -> IEnvironmentAPI:
@@ -31,7 +29,7 @@ class _TestIntegrationCondaLock(TestCommon):
                     self.test_environment_path
                 )
             )
-        self.tmp_dir_obj.cleanup()
+        self.test_base_dir.cleanup()
         super().tearDown()
 
     def create_conda_lockfile(self):

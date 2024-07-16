@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 from typing import Optional
 
+import pooch
 from album.runner.album_logging import get_active_logger
 
 from album.environments.api.controller.conda_lock_manager import ICondaLockManager
@@ -19,7 +20,6 @@ from album.environments.controller.mamba_manager import MambaManager
 from album.environments.controller.micromamba_manager import MicromambaManager
 from album.environments.environment_api import EnvironmentAPI
 from album.environments.model.environment_default_values import EnvironmentDefaultValues
-from album.environments.utils.url_operations import download_resource
 
 
 class PackageManagerHandler:
@@ -79,15 +79,8 @@ class PackageManagerHandler:
 
     def install_default_package_manager(self, install_path: Path) -> Path:
         """Install the default package manager."""
-        install_path_env = EnvironmentDefaultValues.environment_install_path.value
-
-        if install_path_env is None:
-            install_path_ = str(install_path)
-        else:
-            install_path_ = str(install_path_env)
-
         return self.install_micro_mamba(
-            install_path_, EnvironmentDefaultValues.micromamba_base_prefix.value
+            str(install_path), EnvironmentDefaultValues.micromamba_base_prefix.value
         )
 
     @staticmethod
@@ -119,23 +112,41 @@ class PackageManagerHandler:
     @staticmethod
     def _download_mamba_win(mamba_installer_path: Path) -> Path:
         """Download micromamba for windows."""
-        return download_resource(
-            EnvironmentDefaultValues.micromamba_url_windows.value, mamba_installer_path
+        return Path(
+            pooch.retrieve(
+                url=EnvironmentDefaultValues.micromamba_url_windows.value,
+                known_hash=EnvironmentDefaultValues.micromamba_url_windows_hash.value,
+                fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
+                path=mamba_installer_path,
+                progressbar=False,
+            )
         )
 
     @staticmethod
     def _download_mamba_macos(mamba_installer_path: Path) -> Path:
         """Download micromamba for macOS depending on the processor architecture."""
         if PackageManagerHandler.check_architecture().__eq__("x86_64"):
-            return download_resource(
-                EnvironmentDefaultValues.micromamba_url_osx_X86_64.value,
-                mamba_installer_path,
+            return Path(
+                pooch.retrieve(
+                    url=EnvironmentDefaultValues.micromamba_url_osx_X86_64.value,
+                    known_hash=EnvironmentDefaultValues.micromamba_url_osx_X86_64_hash.value,
+                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
+                    path=mamba_installer_path,
+                    progressbar=False,
+                )
             )
+
         elif PackageManagerHandler.check_architecture().lower().__eq__("arm64"):
-            return download_resource(
-                EnvironmentDefaultValues.micromamba_url_osx_ARM64.value,
-                mamba_installer_path,
+            return Path(
+                pooch.retrieve(
+                    url=EnvironmentDefaultValues.micromamba_url_osx_ARM64.value,
+                    known_hash=EnvironmentDefaultValues.micromamba_url_osx_ARM64_hash.value,
+                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
+                    path=mamba_installer_path,
+                    progressbar=False,
+                )
             )
+
         else:
             raise NotImplementedError(
                 "There is no micromamba version for your processor architecture."
@@ -145,19 +156,34 @@ class PackageManagerHandler:
     def _download_mamba_linux(mamba_installer_path: Path) -> Path:
         """Download micromamba for linux depending on the processor architecture."""
         if PackageManagerHandler.check_architecture().__eq__("x86_64"):
-            return download_resource(
-                EnvironmentDefaultValues.micromamba_url_linux_X86_64.value,
-                mamba_installer_path,
+            return Path(
+                pooch.retrieve(
+                    url=EnvironmentDefaultValues.micromamba_url_linux_X86_64.value,
+                    known_hash=EnvironmentDefaultValues.micromamba_url_linux_X86_64_hash.value,
+                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
+                    path=mamba_installer_path,
+                    progressbar=False,
+                )
             )
         elif PackageManagerHandler.check_architecture().lower().__eq__("arm64"):
-            return download_resource(
-                EnvironmentDefaultValues.micromamba_url_linux_ARM64.value,
-                mamba_installer_path,
+            return Path(
+                pooch.retrieve(
+                    url=EnvironmentDefaultValues.micromamba_url_linux_ARM64.value,
+                    known_hash=EnvironmentDefaultValues.micromamba_url_linux_ARM64_hash.value,
+                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
+                    path=mamba_installer_path,
+                    progressbar=False,
+                )
             )
         elif PackageManagerHandler.check_architecture().lower().__eq__("power"):
-            return download_resource(
-                EnvironmentDefaultValues.micromamba_url_linux_POWER.value,
-                mamba_installer_path,
+            return Path(
+                pooch.retrieve(
+                    url=EnvironmentDefaultValues.micromamba_url_linux_POWER.value,
+                    known_hash=EnvironmentDefaultValues.micromamba_url_linux_POWER_hash.value,
+                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
+                    path=mamba_installer_path,
+                    progressbar=False,
+                )
             )
         else:
             raise NotImplementedError(
@@ -196,7 +222,7 @@ class PackageManagerHandler:
 
     @staticmethod
     def install_micro_mamba(install_base_path: str, mamba_base_prefix: str) -> Path:
-        """Install micormamba."""
+        """Install micromamba."""
         install_base_path_ = Path(install_base_path)
         if not install_base_path_.exists():
             install_base_path_.mkdir()

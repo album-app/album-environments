@@ -14,9 +14,6 @@
 .windows_base_template_micromamba:
   before_script:
     - 'echo "We are in path: $pwd "'
-    - 'if(-Not (Test-Path .\downloads)) {echo "Cache download not found! Creating..."; New-Item -ItemType Directory -Force -Path .\downloads} else { echo ".\downloads cache found! with content:"; Get-ChildItem -Path .\downloads}'
-    - 'if(-Not (Test-Path .\.album)) {echo "Cache .album not found! Creating..."; New-Item -ItemType Directory -Force -Path .\.album} else { echo ".\.album cache found! with content:"; Get-ChildItem -Path .\.album}'
-    - 'if(-Not (Test-Path .\micromamba)) {echo "Cache micromamba not found! Creating..."; New-Item -ItemType Directory -Force -Path .\micromamba} else { echo ".\micromamba cache found! with content:"; Get-ChildItem -Path .\micromamba}'
     - '$7ZIP_EXE=(Join-Path $env:ProgramFiles -ChildPath 7-Zip\7z.exe)'
     - "$7ZIP_INSTALLER=(Join-Path downloads -ChildPath 7z.exe)"
     - "$Env:MAMBA_ROOT_PREFIX=(Join-Path -Path (Get-Location) -ChildPath micromamba)"
@@ -27,14 +24,13 @@
     - "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" # set Security download protocol to avoid https errors
     - "if(-Not (Test-Path $7ZIP_EXE)) {if(-Not (Test-Path $7ZIP_INSTALLER)){Invoke-Webrequest -URI https://www.7-zip.org/a/7z2201-x64.exe -OutFile $7ZIP_INSTALLER}}"
     - 'if(-Not (Test-Path $7ZIP_EXE)) {Start-Process -FilePath $7ZIP_INSTALLER -Args "/S" -Verb RunAs -Wait}'
-    - "Invoke-Webrequest -URI https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_WINDOWS.tar.bz2?inline=false -OutFile micromamba.tar.bz2"
+    - "Invoke-Webrequest -URI https://micro.mamba.pm/api/micromamba/win-64/1.5.6 -OutFile micromamba.tar.bz2"
     - "& $7ZIP_EXE x micromamba.tar.bz2 -aoa"
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + $Env:MAMBA_ROOT_PREFIX)'
     - "$progressPreference = $oldProgressPreference"
-    - '.\micromamba\Library\bin\micromamba.exe create -y -n album -c conda-forge python=3.10'
-    - '.\micromamba\Library\bin\micromamba.exe run -n album pip install -e .'
-    - '.\micromamba\Library\bin\micromamba.exe run -n album pip install coverage'
-    - '.\micromamba\Library\bin\micromamba.exe shell init -s powershell -p $Env:MAMBA_ROOT_PREFIX '
+    - '.\micromamba\Library\bin\micromamba.exe create -y -n album-environments -c conda-forge python=3.10'
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments pip install -e .'
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments pip install coverage'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
 
   tags:
@@ -42,7 +38,6 @@
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue # not working properly
   cache:
     key: one-key-to-rule-them-all-windows
     paths:
@@ -79,7 +74,6 @@
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue # not working properly
     MINICONDA_URL: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
   cache:
     key: one-key-to-rule-them-all-windows-conda-with-mamba
@@ -531,7 +525,12 @@ unit tests windows micromamba:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --source=album.environments -m unittest test_album_environments\unit\run_all_unit_micromamba.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "unit.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "unit_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage run --omit .\test_album_environments\* -m unittest test_album_environments\unit\run_all_unit_micromamba.py'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage report }'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage xml } '
+    - 'Rename-Item -Path ".coverage" -NewName "unit.coverage"'
+    - 'Rename-Item -Path "coverage.xml" -NewName "unit_coverage.xml"'
+    - "exit($lastexitcode)}"
   artifacts:
     paths:
       - unit.coverage
@@ -558,7 +557,12 @@ integration tests windows micromamba:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --source=album.environments -m unittest test_album_environments\integration\run_all_integration_micromamba.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "integration.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage run --omit .\test_album_environments\* -m unittest test_album_environments\integration\run_all_integration_micromamba.py'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage report }'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage xml } '
+    - 'Rename-Item -Path ".coverage" -NewName "integration.coverage"'
+    - 'Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml"'
+    - "exit($lastexitcode)"
   artifacts:
     paths:
       - integration.coverage
@@ -601,7 +605,7 @@ create combined coverage for linux:
     - unit tests windows micromamba
     - integration tests windows micromamba
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage combine unit.coverage integration.coverage 2>&1 | Write-Host; coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; exit($lastexitcode)}
+    - $cmnd = powershell.exe -command {micromamba activate album-environments 2>&1 | Write-Host; coverage combine unit.coverage integration.coverage 2>&1 | Write-Host; coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; exit($lastexitcode)}
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     reports:

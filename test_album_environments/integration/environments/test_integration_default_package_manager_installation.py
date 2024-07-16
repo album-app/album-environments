@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from album.environments.api.environment_api import IEnvironmentAPI
-from album.environments.initialization import init_environment_handler
+from album.environments.initialization import PackageManagerHandler
 from test_album_environments.integration.environments.test_integration_conda_lock_base import (
     _TestIntegrationCondaLock,
 )
@@ -26,16 +26,19 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
         self.assertIsNotNone(manual_set_micromamba)
 
         # do not set any package manager, let micromamba from initialization be used, so delete the env var
-        os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"] = ""
-        self.assertEqual("", os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"))
+        del os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"))
 
         inst_path = Path(self.test_base_dir.name).joinpath("installation")
         inst_path.mkdir(exist_ok=True)
 
-        eh = init_environment_handler(
-            env_base_path=self.test_base_envs,
-            installation_base_path=inst_path
+        package_manager_handler = PackageManagerHandler(
+            base_env_path=self.test_base_envs,
+            installation_path=inst_path,
+            micromamba_path=None,
+            mamba_path=None,
+            conda_path=None,
+            conda_lock_path=None,
         )
-
-        print(eh.get_package_manager().get_install_environment_executable())
-        self.assertNotEqual(manual_set_micromamba, eh.get_package_manager().get_install_environment_executable())
+        package_manager = package_manager_handler.get_package_manager()
+        self.assertNotEqual(manual_set_micromamba, package_manager._install_env_executable)

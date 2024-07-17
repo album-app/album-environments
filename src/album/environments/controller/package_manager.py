@@ -309,3 +309,14 @@ class PackageManager(IPackageManager):
                 )
                 return {}
         return {}
+
+    def base_install(
+        self,
+        package_name: str,
+        version: Union[str, None] = None,
+        channel: str = "conda-forge",
+    ) -> None:
+        subproc_args = self._get_base_install_package_args(
+            package_name, version, channel
+        )
+        subcommand.run(subproc_args, log_output=True)

@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from album.environments.api.environment_api import IEnvironmentAPI
 from album.environments.initialization import init_environment_handler
@@ -13,7 +14,7 @@ class TestIntegrationCondaLockMamba(_TestIntegrationCondaLock):
     def init_env_handler(self) -> IEnvironmentAPI:
         # uses mamba from CICD path
         return init_environment_handler(
-            env_base_path=self.test_base_envs, installation_base_path=self.test_base_dir.name
+            env_base_path=self.test_base_envs, installation_base_path=Path(self.test_base_dir.name)
         )
 
     def test_create_conda_lockfile(self):

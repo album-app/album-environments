@@ -232,3 +232,23 @@ class IPackageManager:
     def get_installed_pypi_packages(self, env_prefix: Path) -> Dict[str, str]:
         """Return the list of installed pypi packages."""
         raise NotImplementedError
+
+    @abstractmethod
+    def _get_base_install_package_args(
+        self,
+        package_name: str,
+        version: Optional[str] = None,
+        channel: str = "conda-forge",
+    ) -> List[str]:
+        """Return the arguments for the package installation command."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def base_install(
+        self,
+        package_name: str,
+        version: Optional[str] = None,
+        channel: str = "conda-forge",
+    ) -> None:
+        """Install a package into the base environment."""
+        raise NotImplementedError

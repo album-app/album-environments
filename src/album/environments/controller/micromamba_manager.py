@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 from album.environments.controller.package_manager import PackageManager
 
@@ -102,5 +102,23 @@ class MicromambaManager(PackageManager):
             "pip",
             "list",
             "--format=json",
+        ]
+        return subprocess_args
+
+    def _get_base_install_package_args(
+        self,
+        package_name: str,
+        version: Optional[str] = None,
+        channel: str = "conda-forge",
+    ) -> List[str]:
+        pkg = package_name + (f"=={version}" if version else "")
+        subprocess_args = [
+            self.get_install_environment_executable(),
+            "install",
+            "-y",
+            "-c " + channel,
+            "-p",
+            os.path.normpath(self._base_env_path),
+            pkg,
         ]
         return subprocess_args

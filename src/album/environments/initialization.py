@@ -114,52 +114,54 @@ class PackageManagerHandler:
         _def_pktm_path: Optional[Path],
     ) -> None:
         """Set the conda lock executable based on environment variables or install in base package manager."""
-        # check for conda-lock
+        expected_conda_lock_path = self.get_conda_lock_exe(
+            installation_path.joinpath(
+                EnvironmentDefaultValues.micromamba_base_prefix.value
+            )
+        )
+
+        # freshly installed micromamba
+        if _def_pktm_path is not None:
+            # install conda-lock in base environment of downloaded package manager
+            try:
+                self.install_conda_lock(self.get_package_manager())
+                self._conda_lock_executable = self.get_conda_lock_exe(_def_pktm_path)
+            except SubProcessError:
+                get_active_logger().debug(
+                    "Error when installing conda-lock in the base environment %s of the package manager %s."
+                    "Continuing without conda-lock."
+                    % (
+                        base_env_path,
+                        self.get_package_manager().get_package_manager_name(),
+                    )
+                )
+            return
+
+        # check for conda-lock explicitely given
         if conda_lock_path is not None and Path(conda_lock_path).is_file():
             get_active_logger().info("Using conda-lock executable: %s", conda_lock_path)
             self._conda_lock_executable = conda_lock_path
-        elif self.search_lock_manager(msg=False):
-            self._conda_lock_executable = self.search_lock_manager()
-        else:
-            if _def_pktm_path is not None:
-                # install conda-lock in base environment of downloaded package manager
-                try:
-                    self.install_conda_lock(self.get_package_manager())
-                    self._conda_lock_executable = self.get_conda_lock_exe(
-                        _def_pktm_path
-                    )
-                except SubProcessError:
-                    get_active_logger().debug(
-                        "Error when installing conda-lock in the base environment %s of the package manager %s."
-                        "Continuing without conda-lock."
-                        % (
-                            base_env_path,
-                            self.get_package_manager().get_package_manager_name(),
-                        )
-                    )
-            else:
-                # check if conda-lock is available in the base environment of the given package manager
-                expected_conda_lock_path = self.get_conda_lock_exe(
-                    installation_path.joinpath(
-                        EnvironmentDefaultValues.micromamba_base_prefix.value
-                    )
-                )
-                self._conda_lock_executable = (
-                    expected_conda_lock_path
-                    if Path(expected_conda_lock_path).is_file()
-                    else None
-                )
+            return
 
-                if self._conda_lock_executable is None:
-                    get_active_logger().debug(
-                        "No conda-lock executable found! Cannot lock environments during deployment! "
-                        "Set explicitly in the environment variable ENVIRONMENT_CONDA_LOCK_PATH or install in the"
-                        " base environment %s of the package manager %s."
-                        % (
-                            base_env_path,
-                            self.get_package_manager().get_package_manager_name(),
-                        )
+        # check if conda-lock is available in the base environment of the given package manager
+        elif Path(expected_conda_lock_path).is_file():
+            self._conda_lock_executable = expected_conda_lock_path
+            return
+
+        else:
+            # search for conda-lock
+            self._conda_lock_executable = self.search_lock_manager()
+
+            if self._conda_lock_executable is None:
+                get_active_logger().debug(
+                    "No conda-lock executable found! Cannot lock environments during deployment! "
+                    "Set explicitly in the environment variable ENVIRONMENT_CONDA_LOCK_PATH or install in the"
+                    " base environment %s of the package manager %s."
+                    % (
+                        base_env_path,
+                        self.get_package_manager().get_package_manager_name(),
                     )
+                )
 
     def install_default_package_manager(self, install_path: Path) -> Path:
         """Install the default package manager."""

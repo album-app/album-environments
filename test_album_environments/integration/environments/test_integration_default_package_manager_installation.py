@@ -34,7 +34,7 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
 
         package_manager_handler = PackageManagerHandler(
             base_env_path=self.test_base_envs,
-            installation_path=Path(inst_path),
+            installation_path=str(inst_path),
             micromamba_path=None,
             mamba_path=None,
             conda_path=None,
@@ -44,4 +44,6 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
         self.assertNotEqual(manual_set_micromamba, package_manager._install_env_executable)
 
         conda_lock_manager = package_manager_handler.get_conda_lock_manager()
-        self.assertIsNotNone(conda_lock_manager.conda_lock_executable())
+
+        expected_conda_lock_exe = package_manager_handler.get_conda_lock_exe(Path(inst_path).joinpath("micromamba"))
+        self.assertEqual(expected_conda_lock_exe, conda_lock_manager.conda_lock_executable())

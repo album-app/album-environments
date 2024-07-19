@@ -16,7 +16,6 @@ class TestMicromambaManager(TestCommon):
     def setUp(self):
         super().setUp()
         self.test_base_dir = tempfile.TemporaryDirectory()
-        self.test_base = Path(self.test_base_dir.name).joinpath("envs")
         self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
@@ -57,7 +56,7 @@ class TestMicromambaManager(TestCommon):
         super().tearDown()
 
     def test_get_environment_list(self):
-        base_dir = self.test_base
+        base_dir = self.test_base_envs
         expected = [base_dir.joinpath("envName1").resolve(), base_dir.joinpath("envName2").resolve()]
         Path(expected[0]).joinpath("somefile").mkdir(parents=True)
         Path(expected[1]).joinpath("somefile").mkdir(parents=True)
@@ -68,8 +67,8 @@ class TestMicromambaManager(TestCommon):
 
     @patch("album.environments.controller.package_manager.PackageManager.get_environment_list")
     def test_environment_exists(self, ged_mock):
-        target = self.test_base.joinpath("envName1")
-        target_not_existing = self.test_base.joinpath("notExitendEnvs")
+        target = self.test_base_envs.joinpath("envName1")
+        target_not_existing = self.test_base_envs.joinpath("notExitendEnvs")
         Path(target).joinpath("whatever").mkdir(parents=True)
 
         ged_mock.return_value = [target.resolve()]

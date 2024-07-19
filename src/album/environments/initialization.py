@@ -37,7 +37,10 @@ class PackageManagerHandler:
     ):
         """Initialize the package manager detector."""
         _base_env_path = Path(base_env_path)
+        _base_env_path.mkdir(parents=True, exist_ok=True)
+
         _installation_path = Path(installation_path)
+        _installation_path.mkdir(parents=True, exist_ok=True)
 
         self._conda_executable: Optional[str] = None
         self._mamba_executable: Optional[str] = None
@@ -45,7 +48,9 @@ class PackageManagerHandler:
         self._conda_lock_executable: Optional[str] = None
 
         explicitly_set = self._get_package_manager_executable_from_env(
-            micromamba_path, conda_path, mamba_path
+            micromamba_path=micromamba_path,
+            conda_path=conda_path,
+            mamba_path=mamba_path,
         )
         _def_pktm_path = None
         if not explicitly_set:
@@ -403,7 +408,9 @@ class PackageManagerHandler:
 
         # init package manager
         if self._micromamba_executable:
-            return MicromambaManager(self._micromamba_executable, base_env_path=base_env_path)
+            return MicromambaManager(
+                self._micromamba_executable, base_env_path=base_env_path
+            )
         elif self._mamba_executable:
             return MambaManager(self._mamba_executable, base_env_path=base_env_path)
         elif self._conda_executable:

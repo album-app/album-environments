@@ -15,9 +15,8 @@ class TestMambaManager(TestCommon):
 
     def setUp(self):
         super().setUp()
-        self.test_base_dir = tempfile.TemporaryDirectory()
         self.test_base = Path(self.test_base_dir.name)
-        self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
+        self.test_environment_path = self.test_base_envs.joinpath(self.test_environment_name)
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)

@@ -15,9 +15,8 @@ class TestCondaManager(TestCommon):
 
     def setUp(self):
         super().setUp()
-        self.tmp_dir_obj = tempfile.TemporaryDirectory()
-        self.test_base = Path(self.tmp_dir_obj.name)
-        self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
+        self.test_base = Path(self.test_base_dir.name)
+        self.test_environment_path = self.test_base_envs.joinpath(self.test_environment_name)
         self.tmp_dir = Path(tempfile.TemporaryDirectory().name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -51,14 +50,13 @@ class TestCondaManager(TestCommon):
         if self.conda.environment_exists(self.test_environment_path):
             self.conda.remove_environment(self.test_environment_path)
             self.assertFalse(self.conda.environment_exists(self.test_environment_path))
-        self.tmp_dir_obj.cleanup()
+        self.test_base_dir.cleanup()
         super().tearDown()
 
     def test_get_environment_list(self):
-        base_dir = self.test_base
         expected = list()
-        expected.append(base_dir.joinpath("envName1").resolve())
-        expected.append(base_dir.joinpath("envName2").resolve())
+        expected.append(self.test_base.joinpath("envName1").resolve())
+        expected.append(self.test_base.joinpath("envName2").resolve())
         Path(expected[0]).joinpath("somefile").mkdir(parents=True)
         Path(expected[1]).joinpath("somefile").mkdir(parents=True)
 

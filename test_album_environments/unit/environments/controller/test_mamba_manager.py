@@ -40,7 +40,7 @@ class TestMambaManager(TestCommon):
             base_env_path=str(self.test_base_envs),
             installation_path=str(Path(self.test_base_dir.name)),
             micromamba_path=None,
-            mamba_path=None,
+            mamba_path=os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"),
             conda_path=None,
             conda_lock_path=None,
         )

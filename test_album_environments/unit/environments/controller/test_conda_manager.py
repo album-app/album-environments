@@ -40,7 +40,7 @@ class TestCondaManager(TestCommon):
             installation_path=str(Path(self.test_base_dir.name)),
             micromamba_path=None,
             mamba_path=None,
-            conda_path=None,
+            conda_path=os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"),
             conda_lock_path=None,
         )
 

@@ -6,7 +6,7 @@ import yaml
 
 from album.environments.api.environment_api import IEnvironmentAPI
 from album.environments.environment_api import EnvironmentAPI
-from album.environments.initialization import init_environment_handler, PackageManagerHandler
+from album.environments.initialization import PackageManagerHandler
 from test_album_environments.integration.environments.test_integration_conda_lock_base import (
     _TestIntegrationCondaLock,
 )
@@ -32,7 +32,7 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
         package_manager_handler = PackageManagerHandler(
             base_env_path=str(self.test_base_envs),
             installation_path=str(Path(self.test_base_dir.name)),
-            micromamba_path=None,
+            micromamba_path=os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"),
             mamba_path=None,
             conda_path=None,
             conda_lock_path=None,

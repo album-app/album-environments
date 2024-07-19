@@ -38,7 +38,7 @@ class TestMicromambaManager(TestCommon):
         package_manager_handler = PackageManagerHandler(
             base_env_path=str(self.test_base_envs),
             installation_path=str(Path(self.test_base_dir.name)),
-            micromamba_path=None,
+            micromamba_path=os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"),
             mamba_path=None,
             conda_path=None,
             conda_lock_path=None,

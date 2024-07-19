@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from album.environments.initialization import init_environment_handler
+from album.environments.initialization import init_environment_handler, PackageManagerHandler
 from album.environments.model.environment import Environment
 from test_album_environments.test_common import TestCommon
 
@@ -20,7 +20,17 @@ class TestMicromambaManager(TestCommon):
         self.tmp_dir_obj = tempfile.TemporaryDirectory()
         self.tmp_dir = Path(self.tmp_dir_obj.name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.micromamba = init_environment_handler(self.test_base, self.test_base.parent).get_package_manager()
+        package_manager_handler = PackageManagerHandler(
+            base_env_path=str(self.test_base),
+            installation_path=str(self.test_base.parent),
+            micromamba_path=None,
+            mamba_path=None,
+            conda_path=None,
+            conda_lock_path=None,
+        )
+
+        self.micromamba = package_manager_handler.get_package_manager()
+        self.assertEqual("micromamba", self.micromamba.get_package_manager_name())
 
     def tearDown(self) -> None:
         if self.micromamba.environment_exists(self.test_environment_path):

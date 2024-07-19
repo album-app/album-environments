@@ -26,13 +26,17 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
         self.assertIsNotNone(manual_set_micromamba)
 
         # do not set any package manager, let micromamba from initialization be used, so delete the env var
-        del os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]
+        if "ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH" in os.environ.keys():
+            if os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]:
+                del os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]
 
-        if os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"):
-            del os.environ["ENVIRONMENT_DEBUGGING_MAMBA_PATH"]
+        if "ENVIRONMENT_DEBUGGING_CONDA_PATH" in os.environ.keys():
+            if os.environ["ENVIRONMENT_DEBUGGING_CONDA_PATH"]:
+                del os.environ["ENVIRONMENT_DEBUGGING_CONDA_PATH"]
 
-        if os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"):
-            del os.environ["ENVIRONMENT_DEBUGGING_CONDA_PATH"]
+        if "ENVIRONMENT_DEBUGGING_MAMBA_PATH" in os.environ.keys():
+            if os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"):
+                del os.environ["ENVIRONMENT_DEBUGGING_MAMBA_PATH"]
 
         # ensure no env vars are set
         self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"))

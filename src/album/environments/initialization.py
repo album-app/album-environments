@@ -403,15 +403,13 @@ class PackageManagerHandler:
 
         # init package manager
         if self._micromamba_executable:
-            return MicromambaManager(
-                self._micromamba_executable, base_env_path=base_env_path
-            )
+            return MicromambaManager(self._micromamba_executable, base_env_path=base_env_path)
         elif self._mamba_executable:
             return MambaManager(self._mamba_executable, base_env_path=base_env_path)
-        else:
-            if self._conda_executable is None:
-                raise RuntimeError("No package manager found!")
+        elif self._conda_executable:
             return CondaManager(self._conda_executable, base_env_path=base_env_path)
+        else:
+            raise RuntimeError("No package manager found!")
 
     def get_conda_lock_manager(self) -> ICondaLockManager:
         """Get the conda lock manager."""

@@ -47,6 +47,7 @@ class PackageManagerHandler:
         explicitly_set = self._get_package_manager_executable_from_env(
             micromamba_path, conda_path, mamba_path
         )
+        _def_pktm_path = None
         if not explicitly_set:
             _def_pktm_path = self.set_package_manager_executable(
                 _installation_path, _base_env_path

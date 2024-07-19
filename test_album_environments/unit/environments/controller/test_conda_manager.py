@@ -1,10 +1,11 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from album.environments.controller.conda_manager import CondaManager
+from album.environments.initialization import PackageManagerHandler
 from album.environments.model.environment import Environment
 from test_album_environments.test_common import TestCommon
 
@@ -19,7 +20,32 @@ class TestCondaManager(TestCommon):
         self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
         self.tmp_dir = Path(tempfile.TemporaryDirectory().name)
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.conda = CondaManager("conda", base_env_path=self.test_base)
+
+        if "ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH" in os.environ.keys():
+            if os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]:
+                del os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]
+
+        if "ENVIRONMENT_DEBUGGING_MAMBA_PATH" in os.environ.keys():
+            if os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"):
+                del os.environ["ENVIRONMENT_DEBUGGING_MAMBA_PATH"]
+
+        # ensure no env vars are set
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"))
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"))
+        self.assertIsNotNone(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"))
+
+        # uses conda from CICD path
+        package_manager_handler = PackageManagerHandler(
+            base_env_path=str(self.test_base_envs),
+            installation_path=str(Path(self.test_base_dir.name)),
+            micromamba_path=None,
+            mamba_path=None,
+            conda_path=None,
+            conda_lock_path=None,
+        )
+
+        self.conda = package_manager_handler.get_package_manager()
+
 
     def tearDown(self) -> None:
         if self.conda.environment_exists(self.test_environment_path):

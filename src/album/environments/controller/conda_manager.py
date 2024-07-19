@@ -131,4 +131,4 @@ class CondaManager(PackageManager):
         return subprocess_args
 
     def _get_base_env_key(self) -> str:
-        return "default_prefix"
+        return "conda_prefix"

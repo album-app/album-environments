@@ -125,7 +125,10 @@ class CondaManager(PackageManager):
             "-y",
             "-c " + channel,
             "-p",
-            os.path.normpath(self._base_env_path),
+            os.path.normpath(self.get_base_environment_path()),
             pkg,
         ]
         return subprocess_args
+
+    def _get_base_env_key(self) -> str:
+        return "default_prefix"

@@ -27,7 +27,17 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
 
         # do not set any package manager, let micromamba from initialization be used, so delete the env var
         del os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]
+
+        if os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"):
+            del os.environ["ENVIRONMENT_DEBUGGING_MAMBA_PATH"]
+
+        if os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"):
+            del os.environ["ENVIRONMENT_DEBUGGING_CONDA_PATH"]
+
+        # ensure no env vars are set
         self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"))
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"))
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"))
 
         inst_path = Path(self.test_base_dir.name).joinpath("installation")
         inst_path.mkdir(exist_ok=True)

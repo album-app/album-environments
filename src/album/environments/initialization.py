@@ -44,100 +44,109 @@ class PackageManagerHandler:
         self._micromamba_executable: Optional[str] = None
         self._conda_lock_executable: Optional[str] = None
 
-        _def_pktm_path = self.set_package_manager_executable(
-            _installation_path, conda_path, mamba_path, micromamba_path
+        explicitly_set = self._get_package_manager_executable_from_env(
+            micromamba_path, conda_path, mamba_path
         )
+        if not explicitly_set:
+            _def_pktm_path = self.set_package_manager_executable(
+                _installation_path, _base_env_path
+            )
 
         self._package_manager = self.create_package_manager(_base_env_path)
 
-        self.set_conda_lock(
-            _installation_path, _base_env_path, conda_lock_path, _def_pktm_path
-        )
+        self.set_conda_lock(_installation_path, conda_lock_path, _def_pktm_path)
 
         # allow error
         self._conda_lock_manager = CondaLockManager(
             self._conda_lock_executable, self._package_manager
         )
 
-    def set_package_manager_executable(
+    def _get_package_manager_executable_from_env(
         self,
-        _installation_path: Path,
         conda_path: Optional[str],
         mamba_path: Optional[str],
         micromamba_path: Optional[str],
-    ) -> Optional[Path]:
-        """Set the package manager executable using defined environment variables or download if not present."""
-        _def_pktm_path = None
-        # explicitly defined valid package manager
+    ) -> bool:
         if micromamba_path is not None and Path(micromamba_path).is_file():
             self._micromamba_executable = micromamba_path
             get_active_logger().debug(
                 "Using micromamba executable: %s", self._micromamba_executable
             )
+            return True
         elif mamba_path is not None and Path(mamba_path).is_file():
             self._mamba_executable = mamba_path
             get_active_logger().warn(
                 "Using unsupported mamba executable: %s", self._mamba_executable
             )
+            return True
         elif conda_path is not None and Path(conda_path).is_file():
             self._conda_executable = conda_path
             get_active_logger().warn(
                 "Using unsupported conda executable: %s", self._conda_executable
             )
-        else:
-            # expected default mamba executable
-            _micromamba_exe = Path(
-                self.get_mamba_exe(
-                    _installation_path.joinpath(
-                        EnvironmentDefaultValues.micromamba_base_prefix.value
-                    )
+            return True
+        return False
+
+    def set_package_manager_executable(
+        self, installation_path: Path, base_env_path: Path
+    ) -> Optional[Path]:
+        """Set the package manager executable using defined environment variables or download if not present."""
+        _def_pktm_path = None
+
+        # expected default mamba executable
+        _micromamba_exe = Path(
+            self.get_mamba_exe(
+                installation_path.joinpath(
+                    EnvironmentDefaultValues.micromamba_base_prefix.value
                 )
             )
-            if not _micromamba_exe.is_file():
-                # download and install micromamba
-                get_active_logger().debug(
-                    "No package manager explicitly specified. Installing micromamba..."
-                )
-                _def_pktm_path = self.install_default_package_manager(
-                    _installation_path
-                )
-                self._micromamba_executable = self.get_mamba_exe(_def_pktm_path)
-            else:
-                self._micromamba_executable = str(_micromamba_exe)
+        )
+        get_active_logger().debug("Expected micromamba executable: %s", _micromamba_exe)
+
+        if not _micromamba_exe.is_file():
+            # download and install micromamba
+            get_active_logger().debug(
+                "No package manager explicitly specified. Installing micromamba..."
+            )
+            _def_pktm_path = self.install_default_package_manager(
+                installation_path,
+                base_env_path,
+            )
+            self._micromamba_executable = self.get_mamba_exe(_def_pktm_path)
+        else:
+            self._micromamba_executable = str(_micromamba_exe)
         return _def_pktm_path
 
     def set_conda_lock(
         self,
         installation_path: Path,
-        base_env_path: Path,
         conda_lock_path: Optional[str],
         _def_pktm_path: Optional[Path],
     ) -> None:
         """Set the conda lock executable based on environment variables or install in base package manager."""
         expected_conda_lock_path = self.get_conda_lock_exe(
-            installation_path.joinpath(
-                EnvironmentDefaultValues.micromamba_base_prefix.value
-            )
+            self._package_manager.get_base_environment_path()
         )
 
         # freshly installed micromamba
         if _def_pktm_path is not None:
-            # install conda-lock in base environment of downloaded package manager
+            # install conda-lock in base environment of freshly downloaded package manager
             try:
                 self.install_conda_lock(self.get_package_manager())
                 self._conda_lock_executable = self.get_conda_lock_exe(_def_pktm_path)
-            except SubProcessError:
+            except SubProcessError as se:
                 get_active_logger().debug(
                     "Error when installing conda-lock in the base environment %s of the package manager %s."
-                    "Continuing without conda-lock."
+                    "Continuing without conda-lock. Error message: %s"
                     % (
-                        base_env_path,
+                        str(installation_path),
                         self.get_package_manager().get_package_manager_name(),
+                        str(se),
                     )
                 )
             return
 
-        # check for conda-lock explicitely given
+        # check for conda-lock explicitly given
         if conda_lock_path is not None and Path(conda_lock_path).is_file():
             get_active_logger().info("Using conda-lock executable: %s", conda_lock_path)
             self._conda_lock_executable = conda_lock_path
@@ -148,8 +157,8 @@ class PackageManagerHandler:
             self._conda_lock_executable = expected_conda_lock_path
             return
 
+        # search for conda-lock
         else:
-            # search for conda-lock
             self._conda_lock_executable = self.search_lock_manager()
 
             if self._conda_lock_executable is None:
@@ -158,16 +167,19 @@ class PackageManagerHandler:
                     "Set explicitly in the environment variable ENVIRONMENT_CONDA_LOCK_PATH or install in the"
                     " base environment %s of the package manager %s."
                     % (
-                        base_env_path,
+                        self.get_package_manager().get_base_environment_path(),
                         self.get_package_manager().get_package_manager_name(),
                     )
                 )
 
-    def install_default_package_manager(self, install_path: Path) -> Path:
+    def install_default_package_manager(
+        self, install_path: Path, env_root: Path
+    ) -> Path:
         """Install the default package manager."""
-        return self.install_micro_mamba(
-            str(install_path), EnvironmentDefaultValues.micromamba_base_prefix.value
+        _install_path = install_path.joinpath(
+            EnvironmentDefaultValues.micromamba_base_prefix.value
         )
+        return self.install_micro_mamba(_install_path, env_root)
 
     def install_conda_lock(self, package_manager: IPackageManager) -> None:
         """Install conda-lock."""
@@ -293,10 +305,12 @@ class PackageManagerHandler:
             tar.extractall(mamba_base_path)
 
     @staticmethod
-    def _set_mamba_env_vars(mamba_base_path: Path) -> None:
+    def _set_mamba_env_vars(mamba_install_path: Path, env_root: Path) -> None:
         """Set the micromamba environment variables."""
-        os.environ["MAMBA_ROOT_PREFIX"] = str(mamba_base_path)
-        os.environ["MAMBA_EXE"] = PackageManagerHandler.get_mamba_exe(mamba_base_path)
+        os.environ["MAMBA_ROOT_PREFIX"] = str(env_root)
+        os.environ["MAMBA_EXE"] = PackageManagerHandler.get_mamba_exe(
+            mamba_install_path
+        )
 
     @staticmethod
     def get_mamba_exe(mamba_base_path: Path) -> str:
@@ -311,34 +325,30 @@ class PackageManagerHandler:
             return str(Path(mamba_base_path).joinpath("bin", "micromamba").resolve())
 
     @staticmethod
-    def get_conda_lock_exe(mamba_root_prefix: Path) -> str:
+    def get_conda_lock_exe(default_prefix: Path) -> str:
         """Return the path to the micromamba executable."""
         if platform.system() == "Windows":
             return str(
-                Path(mamba_root_prefix).joinpath("Scripts", "conda-lock.exe").resolve()
+                Path(default_prefix).joinpath("Scripts", "conda-lock.exe").resolve()
             )
         else:
-            return str(Path(mamba_root_prefix).joinpath("bin", "conda-lock").resolve())
+            return str(Path(default_prefix).joinpath("bin", "conda-lock").resolve())
 
     @staticmethod
-    def install_micro_mamba(install_base_path: str, mamba_base_prefix: str) -> Path:
+    def install_micro_mamba(install_base_path: Path, env_root: Path) -> Path:
         """Install micromamba."""
-        install_base_path_ = Path(install_base_path)
+        install_base_path_ = install_base_path
         if not install_base_path_.exists():
             install_base_path_.mkdir()
 
-        mamba_base_path_ = install_base_path_.joinpath(mamba_base_prefix)
-        if not mamba_base_path_.exists():
-            mamba_base_path_.mkdir()
-
-        installer = PackageManagerHandler._download_mamba(mamba_base_path_)
+        installer = PackageManagerHandler._download_mamba(install_base_path_)
         if platform.system() == "Windows":
-            PackageManagerHandler._unpack_mamba_win(installer, mamba_base_path_)
+            PackageManagerHandler._unpack_mamba_win(installer, install_base_path_)
         else:
-            PackageManagerHandler._unpack_mamba_unix(installer, mamba_base_path_)
-        PackageManagerHandler._set_mamba_env_vars(mamba_base_path_)
+            PackageManagerHandler._unpack_mamba_unix(installer, install_base_path_)
+        PackageManagerHandler._set_mamba_env_vars(install_base_path, env_root)
 
-        return mamba_base_path_
+        return install_base_path_
 
     @staticmethod
     def search_lock_manager(msg: bool = True) -> Optional[str]:
@@ -386,6 +396,11 @@ class PackageManagerHandler:
 
     def create_package_manager(self, base_env_path: Path) -> IPackageManager:
         """Create the package manager objet."""
+        # create base environment path if not exists
+        if not base_env_path.exists():
+            base_env_path.mkdir()
+
+        # init package manager
         if self._micromamba_executable:
             return MicromambaManager(
                 self._micromamba_executable, base_env_path=base_env_path

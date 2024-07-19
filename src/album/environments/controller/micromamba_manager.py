@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from album.environments.controller.package_manager import PackageManager
+from album.environments.utils import subcommand
 
 # TODO: Still has the conda executable of the CondaManager parent class. I don' like that, maybe create an extra package
 #  manager class from which every Manager(conda/mamba/micromamba) inherits
@@ -24,6 +25,38 @@ class MicromambaManager(PackageManager):
 
     def __init__(self, micromamba_executable: str, base_env_path: Path):
         super().__init__(micromamba_executable, "micromamba", base_env_path)
+        # prepare current executive environment
+        # self._set_up()
+
+    def _set_up(self) -> None:
+        """Set up the micromamba executable for the current python execution."""
+        if sys.platform == "win32" or sys.platform == "cygwin":
+            subprocess_args = [
+                self.get_install_environment_executable(),
+                "shell",
+                "hook",
+                "-s",
+                "powershell",
+                "|",
+                "Out-String",
+                "|",
+                "Invoke-Expression",
+            ]
+            # set up windows
+            subcommand.run(subprocess_args, log_output=False)
+
+        elif sys.platform == "darwin" or sys.platform == "linux":
+            subprocess_args = [
+                self.get_install_environment_executable(),
+                "shell",
+                "hook",
+                "-s",
+                "posix",
+            ]
+            # set up linux
+            subcommand.run(subprocess_args, log_output=False)
+        else:
+            raise RuntimeError("Unsupported operating system!")
 
     def get_active_environment_name(self) -> str:
         environment_info = self.get_info()
@@ -116,9 +149,13 @@ class MicromambaManager(PackageManager):
             self.get_install_environment_executable(),
             "install",
             "-y",
-            "-c " + channel,
+            "-c ",
+            channel,
             "-p",
-            os.path.normpath(self._base_env_path),
+            os.path.normpath(self.get_base_environment_path()),
             pkg,
         ]
         return subprocess_args
+
+    def _get_base_env_key(self) -> str:
+        return "base environment"

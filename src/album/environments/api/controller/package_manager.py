@@ -252,3 +252,11 @@ class IPackageManager:
     ) -> None:
         """Install a package into the base environment."""
         raise NotImplementedError
+
+    def get_base_environment_path(self) -> Path:
+        """Return the path of the base environment."""
+        raise NotImplementedError
+
+    def _get_base_env_key(self) -> str:
+        """Return the key for the base environment."""
+        raise NotImplementedError

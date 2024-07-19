@@ -319,4 +319,10 @@ class PackageManager(IPackageManager):
         subproc_args = self._get_base_install_package_args(
             package_name, version, channel
         )
-        subcommand.run(subproc_args, log_output=True)
+        subcommand.run(subproc_args, pipe_output=True)
+
+    def get_base_environment_path(self) -> Path:
+        info_dict = self.get_info()
+        k = self._get_base_env_key()
+
+        return Path(info_dict[k])

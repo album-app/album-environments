@@ -130,6 +130,13 @@ class PackageManagerHandler:
         _def_pktm_path: Optional[Path],
     ) -> None:
         """Set the conda lock executable based on environment variables or install in base package manager."""
+        # check for conda-lock explicitly given
+        if conda_lock_path is not None and Path(conda_lock_path).is_file():
+            get_active_logger().info("Using conda-lock executable: %s", conda_lock_path)
+            self._conda_lock_executable = conda_lock_path
+            return
+
+        # check if conda-lock is available in the base environment of the given package manager
         expected_conda_lock_path = self.get_conda_lock_exe(
             self._package_manager.get_base_environment_path()
         )

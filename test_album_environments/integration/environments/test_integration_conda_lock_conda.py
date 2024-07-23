@@ -27,6 +27,8 @@ class TestIntegrationCondaLockConda(_TestIntegrationCondaLock):
         self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"))
         self.assertIsNotNone(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"))
 
+        self.assertTrue(Path(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH")).exists())
+
         # uses conda from CICD path
         package_manager_handler = PackageManagerHandler(
             base_env_path=str(self.test_base_envs),

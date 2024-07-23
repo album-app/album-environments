@@ -29,6 +29,8 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
         self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"))
         self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"))
 
+        self.assertTrue(Path(os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH")).exists())
+
         package_manager_handler = PackageManagerHandler(
             base_env_path=str(self.test_base_envs),
             installation_path=str(Path(self.test_base_dir.name)),

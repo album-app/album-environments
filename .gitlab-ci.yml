@@ -66,10 +66,9 @@
     - "conda init"
     - "conda config --set notify_outdated_conda false"
     - "conda install -y mamba -c conda-forge"
-    - "conda create -y --channel=conda-forge -n album-environments python=3.9 pip"
-    - "conda activate album-environments"
-    - "conda env list"
-    - "pip install --no-cache-dir ." # installs conda-lock
+    - "mamba create -y --channel=conda-forge -n album-environments python=3.9 pip"
+    - "mamba activate album-environments"
+    - "mamba env list"
     - '$Env:ENVIRONMENT_DEBUGGING_MAMBA_PATH=(Join-Path -Path ($PWD) -ChildPath miniconda\condabin\mamba.exe)'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
@@ -108,7 +107,6 @@
     - "conda create -y --channel=conda-forge -n album-environments python=3.9 pip"
     - "conda activate album-environments"
     - "conda env list"
-    - "pip install --no-cache-dir ." # installs conda-lock
     - '$Env:ENVIRONMENT_DEBUGGING_CONDA_PATH=(Join-Path -Path ($PWD) -ChildPath miniconda\condabin\conda.exe)'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
@@ -574,15 +572,15 @@ unit tests windows conda with mamba:
   extends: .windows_base_template_conda_with_mamba
   stage: test
   script:
-    # we need this extra step to properly activate the environment
-    - $cmnd = powershell.exe -command { conda activate album-environments 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command { mamba activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
 
 unit tests windows conda:
   extends: .windows_base_template_conda
   stage: test
   script:
-    # we need this extra step to properly activate the environment
-    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
 
 # Integration
 
@@ -604,15 +602,15 @@ integration tests windows conda with mamba:
   extends: .windows_base_template_conda_with_mamba
   stage: test
   script:
-    # we need this extra step to properly activate the environment
-    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
 
 integration tests windows conda:
   extends: .windows_base_template_conda
   stage: test
   script:
-    # we need this extra step to properly activate the environment
-    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
 
 #---------
 # Coverage

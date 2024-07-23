@@ -17,8 +17,6 @@ class TestCondaManager(TestCommon):
         super().setUp()
         self.test_base = Path(self.test_base_dir.name)
         self.test_environment_path = self.test_base_envs.joinpath(self.test_environment_name)
-        self.tmp_dir = Path(tempfile.TemporaryDirectory().name)
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
 
         if "ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH" in os.environ.keys():
             if os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]:
@@ -54,12 +52,15 @@ class TestCondaManager(TestCommon):
         super().tearDown()
 
     def test_get_environment_list(self):
-        expected = list()
-        expected.append(self.test_base.joinpath("envName1").resolve())
-        expected.append(self.test_base.joinpath("envName2").resolve())
+        expected = [
+            self.test_base_envs.joinpath("envName1").resolve(),
+            self.test_base_envs.joinpath("envName2").resolve()
+        ]
+        # create some content
         Path(expected[0]).joinpath("somefile").mkdir(parents=True)
         Path(expected[1]).joinpath("somefile").mkdir(parents=True)
 
+        # get the list
         res = self.conda.get_environment_list()
 
         self.assertListEqual(expected, res)
@@ -108,10 +109,10 @@ channels:
 dependencies:
   - python
 """
-        with open(self.tmp_dir.joinpath("env_file.yml"), "w") as f:
+        with open(self.test_base.joinpath("env_file.yml"), "w") as f:
             f.writelines(env_file)
         self.conda.create_environment_from_file(
-            self.tmp_dir.joinpath("env_file.yml"), self.test_environment_path
+            self.test_base.joinpath("env_file.yml"), self.test_environment_path
         )
         self.assertEqual(1, install_mock.call_count)
 
@@ -119,11 +120,11 @@ dependencies:
         # wrong file ending
         with self.assertRaises(NameError):
             self.conda.create_environment_from_file(
-                self.tmp_dir.joinpath("env.tiff"), self.test_environment_name
+                self.test_base.joinpath("env.tiff"), self.test_environment_name
             )
 
     def test_create_environment_from_file_valid_but_empty(self):
-        t = self.tmp_dir.joinpath("%s.yml" % self.test_environment_name)
+        t = self.test_base.joinpath("%s.yml" % self.test_environment_name)
         t.touch()
         # no content in file
         with self.assertRaises(ValueError):

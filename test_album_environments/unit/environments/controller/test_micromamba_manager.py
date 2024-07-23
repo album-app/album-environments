@@ -15,10 +15,8 @@ class TestMicromambaManager(TestCommon):
 
     def setUp(self):
         super().setUp()
+        self.test_base = Path(self.test_base_dir.name)
         self.test_environment_path = self.test_base_envs.joinpath(self.test_environment_name)
-        self.tmp_dir_obj = tempfile.TemporaryDirectory()
-        self.tmp_dir = Path(self.tmp_dir_obj.name)
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
 
         if "ENVIRONMENT_DEBUGGING_CONDA_PATH" in os.environ.keys():
             if os.environ["ENVIRONMENT_DEBUGGING_CONDA_PATH"]:
@@ -51,15 +49,19 @@ class TestMicromambaManager(TestCommon):
                 self.micromamba.environment_exists(self.test_environment_path)
             )
         self.test_base_dir.cleanup()
-        self.tmp_dir_obj.cleanup()
         super().tearDown()
 
     def test_get_environment_list(self):
-        base_dir = self.test_base_envs
-        expected = [base_dir.joinpath("envName1").resolve(), base_dir.joinpath("envName2").resolve()]
+        expected = [
+            self.test_base_envs.joinpath("envName1").resolve(),
+            self.test_base_envs.joinpath("envName2").resolve()
+        ]
+
+        # create some content
         Path(expected[0]).joinpath("somefile").mkdir(parents=True)
         Path(expected[1]).joinpath("somefile").mkdir(parents=True)
 
+        # get the list
         res = self.micromamba.get_environment_list()
 
         self.assertListEqual(expected, res)
@@ -103,10 +105,10 @@ class TestMicromambaManager(TestCommon):
 - defaults
 dependencies:
 - python"""
-        with open(self.tmp_dir.joinpath("env_file.yml"), "w") as f:
+        with open(self.test_base.joinpath("env_file.yml"), "w") as f:
             f.writelines(env_file)
         self.micromamba.create_environment_from_file(
-            self.tmp_dir.joinpath("env_file.yml"), self.test_environment_path
+            self.test_base.joinpath("env_file.yml"), self.test_environment_path
         )
         self.assertTrue(self.micromamba.environment_exists(self.test_environment_path))
 
@@ -114,11 +116,11 @@ dependencies:
         # wrong file ending
         with self.assertRaises(NameError):
             self.micromamba.create_environment_from_file(
-                self.tmp_dir.joinpath("env.tiff"), self.test_environment_path
+                self.test_base.joinpath("env.tiff"), self.test_environment_path
             )
 
     def test_create_environment_from_file_valid_but_empty(self):
-        t = self.tmp_dir.joinpath("%s.yml" % self.test_environment_name)
+        t = self.test_base.joinpath("%s.yml" % self.test_environment_name)
         t.touch()
         # no content in file
         with self.assertRaises(ValueError):

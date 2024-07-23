@@ -31,6 +31,8 @@ class TestMambaManager(TestCommon):
         self.assertIsNotNone(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"))
         self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"))
 
+        self.assertTrue(Path(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH")).exists())
+
         # uses mamba from CICD path
         package_manager_handler = PackageManagerHandler(
             base_env_path=str(self.test_base_envs),

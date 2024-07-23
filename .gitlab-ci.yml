@@ -69,7 +69,7 @@
     - "mamba create -y --channel=conda-forge -n album-environments python=3.9 pip"
     - "mamba activate album-environments"
     - "mamba env list"
-    - '$Env:ENVIRONMENT_DEBUGGING_MAMBA_PATH=(Join-Path -Path ($PWD) -ChildPath miniconda\condabin\mamba.exe)'
+    - '$Env:ENVIRONMENT_DEBUGGING_MAMBA_PATH=(Join-Path -Path ($PWD) -ChildPath \miniconda\condabin\mamba.exe)'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
     - windows
@@ -107,7 +107,7 @@
     - "conda create -y --channel=conda-forge -n album-environments python=3.9 pip"
     - "conda activate album-environments"
     - "conda env list"
-    - '$Env:ENVIRONMENT_DEBUGGING_CONDA_PATH=(Join-Path -Path ($PWD) -ChildPath miniconda\condabin\conda.exe)'
+    - '$Env:ENVIRONMENT_DEBUGGING_CONDA_PATH=(Join-Path -Path ($PWD) -ChildPath \miniconda\condabin\conda.exe)'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
     - windows

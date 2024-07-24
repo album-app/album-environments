@@ -149,7 +149,7 @@ class MicromambaManager(PackageManager):
             self.get_install_environment_executable(),
             "install",
             "-y",
-            "-c ",
+            "-c",
             channel,
             "-p",
             os.path.normpath(self.get_base_environment_path()),

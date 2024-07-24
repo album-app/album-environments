@@ -9,6 +9,7 @@ from album.runner.album_logging import get_active_logger
 
 from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.model.environment import IEnvironment
+from album.environments.model.environment_default_values import EnvironmentDefaultValues
 from album.environments.utils import subcommand
 from album.environments.utils.file_operations import force_remove
 from album.environments.utils.subcommand import SubProcessError
@@ -16,7 +17,7 @@ from album.environments.utils.subcommand import SubProcessError
 
 class PackageManager(IPackageManager):
 
-    default_python_version = "3.10"
+    default_python_version = EnvironmentDefaultValues.default_python_version.value
 
     def __init__(
         self, install_executable: str, package_manager_name: str, base_env_path: Path

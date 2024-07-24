@@ -55,3 +55,6 @@ class EnvironmentDefaultValues(Enum):
 
     # conda-lock
     conda_lock_path = os.getenv("ENVIRONMENT_CONDA_LOCK_PATH")
+
+    # default python version
+    default_python_version = "3.10"

@@ -59,5 +59,5 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
 
         conda_lock_manager = package_manager_handler.get_conda_lock_manager()
 
-        expected_conda_lock_exe = package_manager_handler.get_conda_lock_exe(Path(inst_path).joinpath("micromamba"))
+        expected_conda_lock_exe = package_manager_handler.get_conda_lock_exe(self.test_base_envs)
         self.assertEqual(expected_conda_lock_exe, conda_lock_manager.conda_lock_executable())

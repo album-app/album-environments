@@ -313,7 +313,7 @@ class PackageManager(IPackageManager):
         return {}
 
     @staticmethod
-    def _get_pip_exe(environment_path):
+    def _get_pip_exe(environment_path: str) -> str:
         if sys.platform == "win32" or sys.platform == "cygwin":
             # NOTE: WHEN USING 'CONDA RUN' THE CORRECT ENVIRONMENT GETS TEMPORARY ACTIVATED,
             # BUT THE PATH POINTS TO THE WRONG PYTHON (conda base folder python) BECAUSE THE CONDA BASE PATH

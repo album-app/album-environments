@@ -47,7 +47,6 @@ class CondaManager(PackageManager):
             self.get_install_environment_executable(),
             "env",
             "create",
-            "--force",
             "--file",
             env_file.name,
             "-p",
@@ -106,7 +105,7 @@ class CondaManager(PackageManager):
             "--no-capture-output",
             "--prefix",
             os.path.normpath(env_prefix),
-            "pip",
+            self._get_pip_exe(env_prefix),
             "list",
             "--format=json",
         ]

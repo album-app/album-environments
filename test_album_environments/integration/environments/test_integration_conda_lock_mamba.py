@@ -1,5 +1,4 @@
 import os
-import unittest
 from pathlib import Path
 
 from album.environments.api.environment_api import IEnvironmentAPI
@@ -47,6 +46,11 @@ class TestIntegrationCondaLockMamba(_TestIntegrationCondaLock):
     def test_create_conda_lockfile(self):
         super().create_conda_lockfile()
 
+    def test_create_remove_environment(self):
+        super().create_remove_environment()
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_create_environment_from_file_and_get_package_version(self):
+        super().create_environment_from_file_and_get_package_version()
+
+    def test_run_script(self):
+        super().run_script()

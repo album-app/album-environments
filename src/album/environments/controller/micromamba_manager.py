@@ -132,7 +132,7 @@ class MicromambaManager(PackageManager):
             "run",
             "--prefix",
             os.path.normpath(env_prefix),
-            "pip",
+            self._get_pip_exe(env_prefix),
             "list",
             "--format=json",
         ]

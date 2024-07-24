@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
@@ -310,6 +311,19 @@ class PackageManager(IPackageManager):
                 )
                 return {}
         return {}
+
+    @staticmethod
+    def _get_pip_exe(environment_path):
+        if sys.platform == "win32" or sys.platform == "cygwin":
+            # NOTE: WHEN USING 'CONDA RUN' THE CORRECT ENVIRONMENT GETS TEMPORARY ACTIVATED,
+            # BUT THE PATH POINTS TO THE WRONG PYTHON (conda base folder python) BECAUSE THE CONDA BASE PATH
+            # COMES FIRST IN ENVIRONMENT VARIABLE "%PATH%". THUS, FULL PATH IS NECESSARY TO CALL
+            # THE CORRECT PYTHON OR PIP! ToDo: keep track of this!
+            return os.path.normpath(
+                Path(environment_path).joinpath("Scripts", "pip.exe")
+            )
+        else:
+            return os.path.normpath(Path(environment_path).joinpath("bin", "pip"))
 
     def base_install(
         self,

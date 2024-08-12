@@ -66,7 +66,7 @@
     - "conda init"
     - "conda config --set notify_outdated_conda false"
     - "conda install -y mamba -c conda-forge"
-    - "mamba create -y --channel=conda-forge -n album-environments python=3.9 pip"
+    - "mamba create -y --channel=conda-forge -n album-environments python=3.10 pip"
     - "mamba activate album-environments"
     - "mamba env list"
     - "$Env:ENVIRONMENT_DEBUGGING_MAMBA_PATH=(Get-Command mamba).Source"
@@ -105,7 +105,7 @@
     - 'echo "Environment path: $env:PATH" '
     - "conda init"
     - "conda config --set notify_outdated_conda false"
-    - "conda create -y --channel=conda-forge -n album-environments python=3.9 pip"
+    - "conda create -y --channel=conda-forge -n album-environments python=3.10 pip"
     - "conda activate album-environments"
     - "conda env list"
     - "$Env:ENVIRONMENT_DEBUGGING_CONDA_PATH=(Get-Command conda).Source"
@@ -176,7 +176,7 @@
     - apt update
     - python -V
     - which python
-    - conda create -y --channel=conda-forge -n album-environments python=3.9 pip
+    - conda create -y --channel=conda-forge -n album-environments python=3.10 pip
     - conda init bash
     - source ~/.bashrc
     - conda activate album-environments
@@ -214,7 +214,7 @@
     - mamba init
     - source /opt/conda/etc/profile.d/conda.sh # seems to be necessary to activate conda
     - source /opt/conda/etc/profile.d/mamba.sh # seems to be necessary to activate mamba
-    - mamba create -y --channel=conda-forge -n album-environments python=3.9
+    - mamba create -y --channel=conda-forge -n album-environments python=3.10
     - mamba activate album-environments
     - mamba env list
     - pip install .
@@ -286,7 +286,7 @@
     - bash $tmpdir/miniconda.sh -b -p $tmpdir/miniconda
     - export PATH=$PATH:$tmpdir/miniconda/bin/
     - echo $PATH
-    - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
+    - conda create -y --channel=conda-forge -n album-environments python=3.10 pip git
     - source $tmpdir/miniconda/bin/activate
     - conda activate album-environments
     - conda env list
@@ -326,7 +326,7 @@
     - source "$tmpdir/mambaforge/etc/profile.d/mamba.sh"
     - source "$tmpdir/mambaforge/etc/profile.d/conda.sh"
     - conda activate
-    - mamba create -y --channel=conda-forge -n album-environments python=3.9 pip git
+    - mamba create -y --channel=conda-forge -n album-environments python=3.10 pip git
     - mamba activate album-environments
     - mamba env list
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip

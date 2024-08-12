@@ -257,7 +257,6 @@ def _run_process(
             output = None
             if process.stdout is not None:
                 output = process.stdout.readline()
-                print(output.rstrip())
             if output:
                 log.log_info(output.rstrip())
             if process.poll() is not None:
@@ -268,7 +267,6 @@ def _run_process(
                         if not output:
                             break
                         log.log_info(output.rstrip())
-                        print(output.rstrip())
                 break
 
         sys.stdout.flush()

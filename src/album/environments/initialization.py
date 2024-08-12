@@ -81,13 +81,13 @@ class PackageManagerHandler:
             return True
         elif mamba_path is not None and Path(mamba_path).is_file():
             self._mamba_executable = mamba_path
-            get_active_logger().warn(
+            get_active_logger().warning(
                 "Using unsupported mamba executable: %s", self._mamba_executable
             )
             return True
         elif conda_path is not None and Path(conda_path).is_file():
             self._conda_executable = conda_path
-            get_active_logger().warn(
+            get_active_logger().warning(
                 "Using unsupported conda executable: %s", self._conda_executable
             )
             return True
@@ -192,7 +192,7 @@ class PackageManagerHandler:
     def _create_base_environment(self) -> None:
         self.get_package_manager().create_environment(
             str(self.get_package_manager().get_base_environment_path().resolve()),
-            EnvironmentDefaultValues.default_python_version.value,
+            EnvironmentDefaultValues.default_solution_python_version.value,
         )
 
     def install_default_package_manager(self, install_path: Path) -> Path:
@@ -273,15 +273,15 @@ class PackageManagerHandler:
             )
 
     @staticmethod
-    def _download_mamba_linux(mamba_installer_path: Path) -> Path:
+    def _download_mamba_linux(mamba_download_file: Path) -> Path:
         """Download micromamba for linux depending on the processor architecture."""
         if PackageManagerHandler.check_architecture().__eq__("x86_64"):
             return Path(
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_X86_64.value,
                     known_hash=EnvironmentDefaultValues.micromamba_url_linux_X86_64_hash.value,
-                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
-                    path=mamba_installer_path,
+                    fname=mamba_download_file.name,
+                    path=mamba_download_file.parent,
                     progressbar=False,
                 )
             )
@@ -290,8 +290,8 @@ class PackageManagerHandler:
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_ARM64.value,
                     known_hash=EnvironmentDefaultValues.micromamba_url_linux_ARM64_hash.value,
-                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
-                    path=mamba_installer_path,
+                    fname=mamba_download_file.name,
+                    path=mamba_download_file.parent,
                     progressbar=False,
                 )
             )
@@ -300,8 +300,8 @@ class PackageManagerHandler:
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_POWER.value,
                     known_hash=EnvironmentDefaultValues.micromamba_url_linux_POWER_hash.value,
-                    fname=EnvironmentDefaultValues.micromamba_base_prefix.value,
-                    path=mamba_installer_path,
+                    fname=mamba_download_file.name,
+                    path=mamba_download_file.parent,
                     progressbar=False,
                 )
             )
@@ -314,12 +314,18 @@ class PackageManagerHandler:
     def _unpack_mamba_win(mamba_installer: Path, mamba_base_path: Path) -> None:
         """Unpack the Windows version of the micromamba archive."""
         with zipfile.ZipFile(mamba_installer) as zipf:
+            get_active_logger().debug(
+                f"Extracting {str(mamba_installer)} to {str(mamba_base_path)}"
+            )
             zipf.extractall(mamba_base_path)
 
     @staticmethod
     def _unpack_mamba_unix(mamba_installer: Path, mamba_base_path: Path) -> None:
         """Unpack the micromamba archives for linux and macOS."""
         with tarfile.open(mamba_installer, "r") as tar:
+            get_active_logger().debug(
+                f"Extracting {str(mamba_installer)} to {str(mamba_base_path)}"
+            )
             tar.extractall(mamba_base_path)
 
     @staticmethod
@@ -347,6 +353,7 @@ class PackageManagerHandler:
                 .resolve()
             )
         else:
+            get_active_logger().debug("Mamba base path: %s", mamba_base_path)
             return str(Path(mamba_base_path).joinpath("bin", "micromamba").resolve())
 
     @staticmethod
@@ -362,6 +369,10 @@ class PackageManagerHandler:
     @staticmethod
     def install_micro_mamba(install_base_path: Path) -> Path:
         """Install micromamba."""
+        get_active_logger().debug(
+            "Installing micromamba in: %s", str(install_base_path)
+        )
+
         install_base_path_ = install_base_path
         if not install_base_path_.exists():
             install_base_path_.mkdir()
@@ -377,6 +388,8 @@ class PackageManagerHandler:
     @staticmethod
     def search_lock_manager(msg: bool = True) -> Optional[str]:
         """Search for the conda-lock executable."""
+        get_active_logger().debug("Searching for conda-lock")
+
         conda_lock_executable = shutil.which("conda-lock")
         if conda_lock_executable:
             if msg:
@@ -420,6 +433,10 @@ class PackageManagerHandler:
 
     def create_package_manager(self, base_env_path: Path) -> IPackageManager:
         """Create the package manager objet."""
+        get_active_logger().debug(
+            "Creating package manager with base environment: %s", str(base_env_path)
+        )
+
         # create base environment path if not exists
         if not base_env_path.exists():
             base_env_path.mkdir()

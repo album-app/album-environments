@@ -20,8 +20,8 @@ class TestCommon(unittest.TestCase):
         self.second_test_base_dir = tempfile.TemporaryDirectory()  # Do not delete. Needed to prevent conda & mamba from deleting tempfile base dir when removing test environments
         self.test_base_envs = Path(self.test_base_dir.name).joinpath("envs")
         self.logger = get_active_logger()
-        self.enable_test_logging()
         self.setup_silent_test_logging()
+        self.enable_test_logging()
 
     def setup_silent_test_logging(self, logger_name="test-logger"):
         self.captured_output = StringIO()
@@ -39,6 +39,7 @@ class TestCommon(unittest.TestCase):
 
     def enable_test_logging(self):
         if os.getenv("ALBUM_TEST_LOGGING", "False") == "True":
+            self.logger = get_active_logger()
             handler = logging.StreamHandler(sys.stdout)
             handler.setLevel("DEBUG")
             formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')

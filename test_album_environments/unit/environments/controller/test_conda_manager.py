@@ -197,10 +197,19 @@ dependencies:
             ]"""
         )
         environment = Environment(None, "aName", "aPath")
+
+
+        # generally, test whether python is installed
         self.assertTrue(self.conda.is_installed(environment.path(), "python"))
-        self.assertTrue(self.conda.is_installed(environment.path(), "python", "3.9.5"))
-        self.assertFalse(self.conda.is_installed(environment.path(), "python", "500.1"))
-        self.assertTrue(self.conda.is_installed(environment.path(), "python", "2.7"))
+
+        # we test for minimal package version that is available.
+        self.assertTrue(self.conda.is_installed(environment.path(), "python", min_package_version="3.9.5"))
+        self.assertFalse(self.conda.is_installed(environment.path(), "python", min_package_version="500.1"))
+        self.assertTrue(self.conda.is_installed(environment.path(), "python", min_package_version="2.7"))
+
+        # testing for exact package version
+        self.assertTrue(self.conda.is_installed(environment.path(), "python", package_version="3.9.5"))
+        self.assertFalse(self.conda.is_installed(environment.path(), "python", package_version="3.9.4"))
 
     @patch(
         "album.environments.utils.subcommand.run",

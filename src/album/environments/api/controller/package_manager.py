@@ -192,6 +192,7 @@ class IPackageManager:
         self,
         environment_path: Path,
         package_name: str,
+        package_version: Union[str, None] = None,
         min_package_version: Union[str, None] = None,
     ) -> bool:
         """Check if package is installed compatible to a certain version."""
@@ -253,10 +254,11 @@ class IPackageManager:
         """Install a package into the base environment."""
         raise NotImplementedError
 
+    @abstractmethod
     def get_base_environment_path(self) -> Path:
         """Return the path of the base environment."""
         raise NotImplementedError
 
+    @abstractmethod
     def _get_base_env_key(self) -> str:
-        """Return the key for the base environment."""
         raise NotImplementedError

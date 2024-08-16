@@ -47,7 +47,6 @@ class CondaManager(PackageManager):
             self.get_install_environment_executable(),
             "env",
             "create",
-            "--force",
             "--file",
             env_file.name,
             "-p",
@@ -106,8 +105,29 @@ class CondaManager(PackageManager):
             "--no-capture-output",
             "--prefix",
             os.path.normpath(env_prefix),
-            "pip",
+            self._get_pip_exe(env_prefix),
             "list",
             "--format=json",
         ]
         return subprocess_args
+
+    def _get_base_install_package_args(
+        self,
+        package_name: str,
+        version: Optional[str] = None,
+        channel: str = "conda-forge",
+    ) -> List[str]:
+        pkg = package_name + (f"=={version}" if version else "")
+        subprocess_args = [
+            self.get_install_environment_executable(),
+            "install",
+            "-y",
+            "-c " + channel,
+            "-p",
+            os.path.normpath(self.get_base_environment_path()),
+            pkg,
+        ]
+        return subprocess_args
+
+    def _get_base_env_key(self) -> str:
+        return "conda_prefix"

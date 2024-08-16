@@ -192,6 +192,7 @@ class IPackageManager:
         self,
         environment_path: Path,
         package_name: str,
+        package_version: Union[str, None] = None,
         min_package_version: Union[str, None] = None,
     ) -> bool:
         """Check if package is installed compatible to a certain version."""
@@ -231,4 +232,33 @@ class IPackageManager:
     @abstractmethod
     def get_installed_pypi_packages(self, env_prefix: Path) -> Dict[str, str]:
         """Return the list of installed pypi packages."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _get_base_install_package_args(
+        self,
+        package_name: str,
+        version: Optional[str] = None,
+        channel: str = "conda-forge",
+    ) -> List[str]:
+        """Return the arguments for the package installation command."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def base_install(
+        self,
+        package_name: str,
+        version: Optional[str] = None,
+        channel: str = "conda-forge",
+    ) -> None:
+        """Install a package into the base environment."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_base_environment_path(self) -> Path:
+        """Return the path of the base environment."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _get_base_env_key(self) -> str:
         raise NotImplementedError

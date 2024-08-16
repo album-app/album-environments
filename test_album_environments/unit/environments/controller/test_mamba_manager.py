@@ -1,10 +1,11 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from album.environments.controller.mamba_manager import MambaManager
+from album.environments.initialization import PackageManagerHandler
 from album.environments.model.environment import Environment
 from test_album_environments.test_common import TestCommon
 
@@ -14,30 +15,54 @@ class TestMambaManager(TestCommon):
 
     def setUp(self):
         super().setUp()
-        self.test_base_dir = tempfile.TemporaryDirectory()
         self.test_base = Path(self.test_base_dir.name)
-        self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
-        self.tmp_dir_obj = tempfile.TemporaryDirectory()
-        self.tmp_dir = Path(self.tmp_dir_obj.name)
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.mamba = MambaManager("mamba", base_env_path=self.test_base)
+        self.test_environment_path = self.test_base_envs.joinpath(self.test_environment_name)
+
+        if "ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH" in os.environ.keys():
+            if os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]:
+                del os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]
+
+        if "ENVIRONMENT_DEBUGGING_CONDA_PATH" in os.environ.keys():
+            if os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"):
+                del os.environ["ENVIRONMENT_DEBUGGING_CONDA_PATH"]
+
+        # ensure no env vars are set
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"))
+        self.assertIsNotNone(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"))
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"))
+
+        self.assertTrue(Path(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH")).exists())
+
+        # uses mamba from CICD path
+        package_manager_handler = PackageManagerHandler(
+            base_env_path=str(self.test_base_envs),
+            installation_path=str(Path(self.test_base_dir.name)),
+            micromamba_path=None,
+            mamba_path=os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"),
+            conda_path=None,
+            conda_lock_path=None,
+        )
+
+        self.mamba = package_manager_handler.get_package_manager()
 
     def tearDown(self) -> None:
         if self.mamba.environment_exists(self.test_environment_path):
             self.mamba.remove_environment(self.test_environment_path)
             self.assertFalse(self.mamba.environment_exists(self.test_environment_path))
         self.test_base_dir.cleanup()
-        self.tmp_dir_obj.cleanup()
         super().tearDown()
 
     def test_get_environment_list(self):
-        base_dir = self.test_base
-        expected = list()
-        expected.append(base_dir.joinpath("envName1").resolve())
-        expected.append(base_dir.joinpath("envName2").resolve())
+        expected = [
+            self.test_base_envs.joinpath("envName1").resolve(),
+            self.test_base_envs.joinpath("envName2").resolve()
+        ]
+
+        # create some content
         Path(expected[0]).joinpath("somefile").mkdir(parents=True)
         Path(expected[1]).joinpath("somefile").mkdir(parents=True)
 
+        # get the list
         res = self.mamba.get_environment_list()
 
         self.assertListEqual(expected, res)
@@ -86,10 +111,10 @@ channels:
 dependencies:
   - python
 """
-        with open(self.tmp_dir.joinpath("env_file.yml"), "w") as f:
+        with open(self.test_base.joinpath("env_file.yml"), "w") as f:
             f.writelines(env_file)
         self.mamba.create_environment_from_file(
-            self.tmp_dir.joinpath("env_file.yml"), self.test_environment_path
+            self.test_base.joinpath("env_file.yml"), self.test_environment_path
         )
         self.assertEqual(1, install_mock.call_count)
 
@@ -97,11 +122,11 @@ dependencies:
         # wrong file ending
         with self.assertRaises(NameError):
             self.mamba.create_environment_from_file(
-                self.tmp_dir.joinpath("env.tiff"), self.test_environment_name
+                self.test_base.joinpath("env.tiff"), self.test_environment_name
             )
 
     def test_create_environment_from_file_valid_but_empty(self):
-        t = self.tmp_dir.joinpath("%s.yml" % self.test_environment_name)
+        t = self.test_base.joinpath("%s.yml" % self.test_environment_name)
         t.touch()
         # no content in file
         with self.assertRaises(ValueError):
@@ -139,7 +164,7 @@ dependencies:
                 )
             )
         else:
-            unittest.skip("WARNING - CONDA ERROR!")
+            unittest.skip("WARNING - MAMBA ERROR!")
 
     @unittest.skip("Tested in tear_down() routine!")
     def test_remove_environment(self, active_env_mock):
@@ -171,10 +196,18 @@ dependencies:
             ]"""
         )
         environment = Environment(None, "aName", "aPath")
+
+        # generally, test whether python is installed
         self.assertTrue(self.mamba.is_installed(environment.path(), "python"))
-        self.assertTrue(self.mamba.is_installed(environment.path(), "python", "3.9.5"))
-        self.assertFalse(self.mamba.is_installed(environment.path(), "python", "500.1"))
-        self.assertTrue(self.mamba.is_installed(environment.path(), "python", "2.7"))
+
+        # we test for minimal package version that is available.
+        self.assertTrue(self.mamba.is_installed(environment.path(), "python", min_package_version="3.9.5"))
+        self.assertFalse(self.mamba.is_installed(environment.path(), "python", min_package_version="500.1"))
+        self.assertTrue(self.mamba.is_installed(environment.path(), "python", min_package_version="2.7"))
+
+        # testing for exact package version
+        self.assertTrue(self.mamba.is_installed(environment.path(), "python", package_version="3.9.5"))
+        self.assertFalse(self.mamba.is_installed(environment.path(), "python", package_version="3.9.4"))
 
     @patch(
         "album.environments.utils.subcommand.run",

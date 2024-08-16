@@ -1,5 +1,7 @@
+"""Implementation of the PackageManager class."""
 import json
 import os
+import platform
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
@@ -9,6 +11,7 @@ from album.runner.album_logging import get_active_logger
 
 from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.model.environment import IEnvironment
+from album.environments.model.environment_default_values import EnvironmentDefaultValues
 from album.environments.utils import subcommand
 from album.environments.utils.file_operations import force_remove
 from album.environments.utils.subcommand import SubProcessError
@@ -16,7 +19,9 @@ from album.environments.utils.subcommand import SubProcessError
 
 class PackageManager(IPackageManager):
 
-    default_python_version = "3.10"
+    default_python_version = (
+        EnvironmentDefaultValues.default_solution_python_version.value
+    )
 
     def __init__(
         self, install_executable: str, package_manager_name: str, base_env_path: Path
@@ -213,12 +218,26 @@ class PackageManager(IPackageManager):
         self,
         environment_path: Path,
         package_name: str,
+        package_version: Union[str, None] = None,
         min_package_version: Union[str, None] = None,
     ) -> bool:
         env_list = self.list_environment(environment_path)
 
         for package in env_list:
             if package["name"] == package_name:  # type: ignore
+                if package_version:
+                    if package["version"] == package_version:  # type: ignore
+                        get_active_logger().debug(
+                            "Package %s:%s is installed..."
+                            % (package_name, package_version)
+                        )
+                        return True
+                    else:
+                        get_active_logger().debug(
+                            "Package %s:%s is not installed."
+                            % (package_name, package["version"])  # type: ignore
+                        )
+                        return False
                 if min_package_version:
                     if package["version"] == min_package_version:  # type: ignore
                         get_active_logger().debug(
@@ -309,3 +328,41 @@ class PackageManager(IPackageManager):
                 )
                 return {}
         return {}
+
+    @staticmethod
+    def _get_pip_exe(environment_path: str) -> str:
+        p = (
+            platform.system()
+        )  # Returns system/OS name: 'Linux', 'Darwin', 'Java', 'Windows'. Empty if the value cannot be determined.
+        if p == "Windows":
+            # NOTE: WHEN USING 'CONDA RUN' THE CORRECT ENVIRONMENT GETS TEMPORARY ACTIVATED,
+            # BUT THE PATH POINTS TO THE WRONG PYTHON (conda base folder python) BECAUSE THE CONDA BASE PATH
+            # COMES FIRST IN ENVIRONMENT VARIABLE "%PATH%". THUS, FULL PATH IS NECESSARY TO CALL
+            # THE CORRECT PYTHON OR PIP! ToDo: keep track of this!
+            return os.path.normpath(
+                Path(environment_path).joinpath("Scripts", "pip.exe")
+            )
+        elif p == "Darwin" or p == "Linux":
+            return os.path.normpath(Path(environment_path).joinpath("bin", "pip"))
+        else:
+            get_active_logger().warning(
+                "Unsupported platform: %s! Trying linux based pathing." % p
+            )
+            return os.path.normpath(Path(environment_path).joinpath("bin", "pip"))
+
+    def base_install(
+        self,
+        package_name: str,
+        version: Union[str, None] = None,
+        channel: str = "conda-forge",
+    ) -> None:
+        subproc_args = self._get_base_install_package_args(
+            package_name, version, channel
+        )
+        subcommand.run(subproc_args, pipe_output=True)
+
+    def get_base_environment_path(self) -> Path:
+        info_dict = self.get_info()
+        k = self._get_base_env_key()
+
+        return Path(info_dict[k])

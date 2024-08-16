@@ -1,7 +1,6 @@
 import time
 import unittest
 
-from test_album_environments.unit.environments import test_environment_API
 from test_album_environments.unit.environments.controller import test_mamba_manager
 
 
@@ -10,7 +9,6 @@ def main():
     suite = unittest.TestSuite()
 
     suite.addTests(loader.loadTestsFromModule(test_mamba_manager))
-    suite.addTests(loader.loadTestsFromModule(test_environment_API))
 
     runner = unittest.TextTestRunner(verbosity=3)
     result = runner.run(suite)

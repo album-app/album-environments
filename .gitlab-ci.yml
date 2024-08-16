@@ -14,27 +14,23 @@
 .windows_base_template_micromamba:
   before_script:
     - 'echo "We are in path: $pwd "'
-    - 'if(-Not (Test-Path .\downloads)) {echo "Cache download not found! Creating..."; New-Item -ItemType Directory -Force -Path .\downloads} else { echo ".\downloads cache found! with content:"; Get-ChildItem -Path .\downloads}'
-    - 'if(-Not (Test-Path .\.album)) {echo "Cache .album not found! Creating..."; New-Item -ItemType Directory -Force -Path .\.album} else { echo ".\.album cache found! with content:"; Get-ChildItem -Path .\.album}'
-    - 'if(-Not (Test-Path .\micromamba)) {echo "Cache micromamba not found! Creating..."; New-Item -ItemType Directory -Force -Path .\micromamba} else { echo ".\micromamba cache found! with content:"; Get-ChildItem -Path .\micromamba}'
     - '$7ZIP_EXE=(Join-Path $env:ProgramFiles -ChildPath 7-Zip\7z.exe)'
     - "$7ZIP_INSTALLER=(Join-Path downloads -ChildPath 7z.exe)"
     - "$Env:MAMBA_ROOT_PREFIX=(Join-Path -Path (Get-Location) -ChildPath micromamba)"
     - '$Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba\Library\bin\micromamba.exe)'
     - "$Env:USERPROFILE=$pwd"
-    - '$Env:ALBUM_MICROMAMBA_PATH=(Join-Path -Path ($CI_PROJECT_DIR) -ChildPath micromamba\Library\bin\micromamba.exe)'
+    - '$Env:ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=(Join-Path -Path (Get-Location) -ChildPath micromamba\Library\bin\micromamba.exe)'
     - '$oldProgressPreference = $progressPreference; $progressPreference = "SilentlyContinue";'
     - "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" # set Security download protocol to avoid https errors
     - "if(-Not (Test-Path $7ZIP_EXE)) {if(-Not (Test-Path $7ZIP_INSTALLER)){Invoke-Webrequest -URI https://www.7-zip.org/a/7z2201-x64.exe -OutFile $7ZIP_INSTALLER}}"
     - 'if(-Not (Test-Path $7ZIP_EXE)) {Start-Process -FilePath $7ZIP_INSTALLER -Args "/S" -Verb RunAs -Wait}'
-    - "Invoke-Webrequest -URI https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_WINDOWS.tar.bz2?inline=false -OutFile micromamba.tar.bz2"
+    - "Invoke-Webrequest -URI https://micro.mamba.pm/api/micromamba/win-64/1.5.6 -OutFile micromamba.tar.bz2"
     - "& $7ZIP_EXE x micromamba.tar.bz2 -aoa"
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + $Env:MAMBA_ROOT_PREFIX)'
     - "$progressPreference = $oldProgressPreference"
-    - '.\micromamba\Library\bin\micromamba.exe create -y -n album -c conda-forge python=3.10'
-    - '.\micromamba\Library\bin\micromamba.exe run -n album pip install -e .'
-    - '.\micromamba\Library\bin\micromamba.exe run -n album pip install coverage'
-    - '.\micromamba\Library\bin\micromamba.exe shell init -s powershell -p $Env:MAMBA_ROOT_PREFIX '
+    - '.\micromamba\Library\bin\micromamba.exe create -y -n album-environments -c conda-forge python=3.10'
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments pip install -e .'
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments pip install coverage'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
 
   tags:
@@ -42,7 +38,6 @@
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue # not working properly
   cache:
     key: one-key-to-rule-them-all-windows
     paths:
@@ -71,14 +66,17 @@
     - "conda init"
     - "conda config --set notify_outdated_conda false"
     - "conda install -y mamba -c conda-forge"
-    - "$progressPreference = $oldProgressPreference"
+    - "mamba create -y --channel=conda-forge -n album-environments python=3.10 pip"
+    - "mamba activate album-environments"
+    - "mamba env list"
+    - "$Env:ENVIRONMENT_DEBUGGING_MAMBA_PATH=(Get-Command mamba).Source"
+    - "$Env:ENVIRONMENT_CONDA_LOCK_PATH=(Get-Command conda-lock).Source" # explicitly set conda-lock path as it comes as dependency
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
     - windows
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue # not working properly
     MINICONDA_URL: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
   cache:
     key: one-key-to-rule-them-all-windows-conda-with-mamba
@@ -107,14 +105,16 @@
     - 'echo "Environment path: $env:PATH" '
     - "conda init"
     - "conda config --set notify_outdated_conda false"
-    - "$progressPreference = $oldProgressPreference"
+    - "conda create -y --channel=conda-forge -n album-environments python=3.10 pip"
+    - "conda activate album-environments"
+    - "conda env list"
+    - "$Env:ENVIRONMENT_DEBUGGING_CONDA_PATH=(Get-Command conda).Source"
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
   tags:
     - windows
     - powershell
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR\.cache\pip
-    ErrorActionPreference: Continue # not working properly
     MINICONDA_URL: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
   cache:
     key: one-key-to-rule-them-all-windows-conda
@@ -137,18 +137,20 @@
     - apt install -y curl
     - apt install -y bzip2
     - export MAMBA_ROOT_PREFIX=$CI_PROJECT_DIR/micromamba
-    - export ALBUM_MICROMAMBA_PATH=$CI_PROJECT_DIR/bin/micromamba
     - mkdir -p $CI_PROJECT_DIR/bin/
-    - curl -Ls https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_LINUX_X86_64.tar.bz2?inline=false | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
+    - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
     - micromamba create -y -n album-environments -c conda-forge python=3.10
     - micromamba activate album-environments
-    - pip install .
+    - pip install . # should install conda-lock
     - python -V
     - python -c "import shutil; print(shutil.which(\"micromamba\"))"
-    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
+    - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$CI_PROJECT_DIR/bin/micromamba
+    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock) # explicitly set conda-lock path as it comes as dependency
     - pip install coverage
     - pip list
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
     CONDA_ENV_NAME: album-environments
@@ -170,66 +172,65 @@
   tags:
     - docker
   before_script:
+    - echo "$SHELL"
     - apt update
-    - apt install git -y
-    - python -V # Print out python version for debugging
+    - python -V
     - which python
-    - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
+    - conda create -y --channel=conda-forge -n album-environments python=3.10 pip
     - conda init bash
     - source ~/.bashrc
     - conda activate album-environments
+    - conda env list
     - pip install -e .
     - which python
-    - conda activate album-environments
     - python -V
     - python -c "import shutil; print(shutil.which(\"conda\"))"
-    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
+    - export ENVIRONMENT_DEBUGGING_CONDA_PATH=$(which conda)
+    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock)
     - pip list
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
-    CONDA_ENV_NAME: album-environments
-    CONDA_PREFIX: /opt/conda
-    PREFIX: $CONDA_PREFIX/envs/$CONDA_ENV_NAME
   cache:
     key: one-key-to-rule-them-all-linux
     paths:
-      - ${CONDA_PREFIX}/pkgs/*.tar.bz2
-      - ${CONDA_PREFIX}/pkgs/urls.txt
       - .cache/pip
 
 # Linux base template for running test with conda with mamba as package manager
 #
 # Uses a docker image where conda is already installed.
-# Creates a album environment.
+# Creates an album environment.
 #
 .linux_base_template_conda_with_mamba:
   image: condaforge/mambaforge:latest
   tags:
     - docker
   before_script:
+    - echo "$SHELL"
     - apt update
-    - apt install git -y
     - python -V # Print out python version for debugging
     - which python
-    - mamba create -y --channel=conda-forge -n album-environments python=3.9
-    - source /opt/conda/bin/activate
-    - conda activate album-environments
+    - mamba init
+    - source /opt/conda/etc/profile.d/conda.sh # seems to be necessary to activate conda
+    - source /opt/conda/etc/profile.d/mamba.sh # seems to be necessary to activate mamba
+    - mamba create -y --channel=conda-forge -n album-environments python=3.10
+    - mamba activate album-environments
+    - mamba env list
     - pip install .
     - which python
     - python -V
     - python -c "import shutil; print(shutil.which(\"mamba\"))"
-    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
     - pip list
+    - export ENVIRONMENT_DEBUGGING_MAMBA_PATH=$(which mamba)
+    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock)
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
   variables:
     PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
-    CONDA_ENV_NAME: album-environments
-    CONDA_PREFIX: /opt/conda
-    PREFIX: $CONDA_PREFIX/envs/$CONDA_ENV_NAME
   cache:
     key: one-key-to-rule-them-all-linux
     paths:
-      - ${CONDA_PREFIX}/pkgs/*.tar.bz2
-      - ${CONDA_PREFIX}/pkgs/urls.txt
       - .cache/pip
 
 # Macos base template for running tests with micromamba as package manager
@@ -248,17 +249,19 @@
     - echo $tmpdir
     - echo $tmpdir > /tmp/tmpdir
     - export MAMBA_ROOT_PREFIX=$tmpdir/micromamba
-    - export ALBUM_MICROMAMBA_PATH=$tmpdir/bin/micromamba
+    - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$tmpdir/bin/micromamba
     - mkdir -p $tmpdir/bin/
-    - curl -Ls https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/micromamba-1.0.0_MACOS_X86_64.tar.bz2?inline=false | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
+    - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/1.5.6  | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - eval "$($tmpdir/bin/micromamba shell hook -s posix)"
     - micromamba create -y -n album-environments -c conda-forge python=3.10
     - micromamba activate album-environments
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
     - python -c "import shutil; print(shutil.which(\"micromamba\"))"
-    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
+    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock) # explicitly set conda-lock path as it comes as dependenc
     - pip list
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir
@@ -283,14 +286,18 @@
     - bash $tmpdir/miniconda.sh -b -p $tmpdir/miniconda
     - export PATH=$PATH:$tmpdir/miniconda/bin/
     - echo $PATH
-    - conda create -y --channel=conda-forge -n album-environments python=3.9 pip git
+    - conda create -y --channel=conda-forge -n album-environments python=3.10 pip git
     - source $tmpdir/miniconda/bin/activate
     - conda activate album-environments
+    - conda env list
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
     - python -c "import shutil; print(shutil.which(\"conda\"))"
-    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
     - pip list
+    - export ENVIRONMENT_DEBUGGING_CONDA_PATH=$(which conda)
+    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock)
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir
@@ -319,13 +326,17 @@
     - source "$tmpdir/mambaforge/etc/profile.d/mamba.sh"
     - source "$tmpdir/mambaforge/etc/profile.d/conda.sh"
     - conda activate
-    - mamba create -y --channel=conda-forge -n album-environments python=3.9 pip git
+    - mamba create -y --channel=conda-forge -n album-environments python=3.10 pip git
     - mamba activate album-environments
+    - mamba env list
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
     - python -c "import shutil; print(shutil.which(\"mamba\"))"
-    - env -0 | sort -z | tr '\0' '\n' | grep -i album
+    - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
     - pip list
+    - export ENVIRONMENT_DEBUGGING_MAMBA_PATH=$(which mamba)
+    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock)
+    - env -0 | sort -z | tr '\0' '\n' | grep -i album
   after_script:
     - tmpdir=$(</tmp/tmpdir)
     - echo $tmpdir
@@ -433,9 +444,13 @@ pypi deploy:
       changes:
         - setup.cfg
 
-# Linux Tests
+#------
+# Linux
+#------
 
-unit tests linux micromamba:
+# Unittests
+
+linux micromamba unit tests:
   extends: .linux_base_template_micromamba
   stage: test
   script:
@@ -446,19 +461,21 @@ unit tests linux micromamba:
     paths:
       - unit.coverage
 
-unit tests linux conda:
+linux conda unit tests:
   extends: .linux_base_template_conda
   stage: test
   script:
     - python -m unittest test_album_environments/unit/run_all_unit_conda.py
 
-unit tests linux conda with mamba:
+linux mamba unit tests:
   extends: .linux_base_template_conda_with_mamba
   stage: test
   script:
     - python -m unittest test_album_environments/unit/run_all_unit_conda_with_mamba.py
 
-integration tests linux micromamba:
+# Integration
+
+linux micromamba integration tests:
   extends: .linux_base_template_micromamba
   stage: test
   script:
@@ -469,111 +486,139 @@ integration tests linux micromamba:
     paths:
       - integration.coverage
 
-integration tests linux conda:
+linux conda integration tests:
   extends: .linux_base_template_conda
   stage: test
   script:
     - python -m unittest test_album_environments/integration/run_all_integration_conda.py
 
-integration tests linux conda with mamba:
+linux mamba integration tests:
   extends: .linux_base_template_conda_with_mamba
   stage: test
   script:
     - python -m unittest test_album_environments/integration/run_all_integration_mamba.py
 
-# MacOs Tests
+#------
+# MacOS
+#------
 
-unit tests macos micromamba:
+# Unittests
+
+macos micromamba unit tests:
   extends: .macos_base_template_micromamba
   stage: test
   script:
     - python -m unittest test_album_environments/unit/run_all_unit_micromamba.py
 
-unit tests macos conda:
+macos conda unit tests:
   extends: .macos_base_template_conda
   stage: test
   script:
     - python -m unittest test_album_environments/unit/run_all_unit_conda.py
 
-unit tests macos conda with mamba:
+macos mamba unit tests:
   extends: .macos_base_template_conda_with_mamba
   stage: test
   script:
     - python -m unittest test_album_environments/unit/run_all_unit_conda_with_mamba.py
 
-integration tests macos micromamba:
+# Integration
+
+macos micromamba integration tests:
   extends: .macos_base_template_micromamba
   stage: test
   script:
     - python -m unittest test_album_environments/integration/run_all_integration_micromamba.py
 
-integration tests macos conda:
+macos conda integration tests:
   extends: .macos_base_template_conda
   stage: test
   script:
     - python -m unittest test_album_environments/integration/run_all_integration_conda.py
 
-integration tests macos conda with mamba:
+macos mamba integration tests:
   extends: .macos_base_template_conda_with_mamba
   stage: test
   script:
     - python -m unittest test_album_environments/integration/run_all_integration_mamba.py
 
-# Windows Tests
+#--------
+# Windows
+#--------
 
-unit tests windows micromamba:
+# Unittests
+
+windows micromamba unit tests:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --source=album.environments -m unittest test_album_environments\unit\run_all_unit_micromamba.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "unit.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "unit_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage run --omit .\test_album_environments\* -m unittest test_album_environments\unit\run_all_unit_micromamba.py'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage report }'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage xml } '
+    - 'Rename-Item -Path ".coverage" -NewName "unit.coverage"'
+    - 'Rename-Item -Path "coverage.xml" -NewName "unit_coverage.xml"'
+    - "exit($lastexitcode)}"
   artifacts:
     paths:
       - unit.coverage
 
-unit tests windows conda:
+windows mamba unit tests:
+  extends: .windows_base_template_conda_with_mamba
+  stage: test
+  script:
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command { mamba activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
+
+windows conda unit tests:
   extends: .windows_base_template_conda
   stage: test
   script:
-    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
 
-unit tests windows conda with mamba:
-  extends: .windows_base_template_conda_with_mamba
-  stage: test
-  script:
-    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
+# Integration
 
-integration tests windows conda with mamba:
-  extends: .windows_base_template_conda_with_mamba
-  stage: test
-  script:
-    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
-
-integration tests windows micromamba:
+windows micromamba integration tests:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage run --source=album.environments -m unittest test_album_environments\integration\run_all_integration_micromamba.py 2>&1 | Write-Host; if ($lastexitcode -ne 0) {exit(1)} else {coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; Rename-Item -Path ".coverage" -NewName "integration.coverage" 2>&1 | Write-Host; Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml" 2>&1 | Write-Host;} exit($lastexitcode)}
+    - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage run --omit .\test_album_environments\* -m unittest test_album_environments\integration\run_all_integration_micromamba.py'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage report }'
+    - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments coverage xml } '
+    - 'Rename-Item -Path ".coverage" -NewName "integration.coverage"'
+    - 'Rename-Item -Path "coverage.xml" -NewName "integration_coverage.xml"'
+    - "exit($lastexitcode)"
   artifacts:
     paths:
       - integration.coverage
 
-integration tests windows conda:
+windows mamba integration tests:
+  extends: .windows_base_template_conda_with_mamba
+  stage: test
+  script:
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
+
+windows conda integration tests:
   extends: .windows_base_template_conda
   stage: test
   script:
-    - $cmnd = powershell.exe -command {conda create -y --channel=conda-forge -n album-environments python=3.9 pip git 2>&1 | Write-Host; conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
+    # we need to spawn an extra powershell to properly activate the environment
+    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\integration\run_all_integration_conda.py 2>&1 | Write-Host; exit($lastexitcode)}
 
-# Create combined coverage reports
+#---------
+# Coverage
+#---------
 
 create combined coverage for linux:
   extends: .linux_base_template_micromamba
   stage: test
   dependencies:
-    - unit tests linux micromamba
-    - integration tests linux micromamba
+    - linux micromamba unit tests
+    - linux micromamba integration tests
   needs:
-    - unit tests linux micromamba
-    - integration tests linux micromamba
+    - linux micromamba unit tests
+    - linux micromamba integration tests
   script:
     - coverage combine unit.coverage integration.coverage
     - coverage report
@@ -589,13 +634,13 @@ create combined coverage for linux:
   extends: .windows_base_template_micromamba
   stage: test
   dependencies:
-    - unit tests windows micromamba
-    - integration tests windows micromamba
+    - windows micromamba unit tests
+    - windows micromamba integration tests
   needs:
-    - unit tests windows micromamba
-    - integration tests windows micromamba
+    - windows micromamba unit tests
+    - windows micromamba integration tests
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage combine unit.coverage integration.coverage 2>&1 | Write-Host; coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; exit($lastexitcode)}
+    - $cmnd = powershell.exe -command {micromamba activate album-environments 2>&1 | Write-Host; coverage combine unit.coverage integration.coverage 2>&1 | Write-Host; coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; exit($lastexitcode)}
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     reports:

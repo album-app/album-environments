@@ -257,10 +257,18 @@ def _run_process(
             output = None
             if process.stdout is not None:
                 output = process.stdout.readline()
-            if process.poll() is not None:
-                break
             if output:
                 log.log_info(output.rstrip())
+            if process.poll() is not None:
+                # finish reading the output
+                while True:
+                    if process.stdout is not None:
+                        output = process.stdout.readline()
+                        if not output:
+                            break
+                        log.log_info(output.rstrip())
+                break
+
         sys.stdout.flush()
         rc = process.poll()
         if rc != 0:

@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 from album.environments.controller.package_manager import PackageManager
 
@@ -32,6 +32,7 @@ class MicromambaManager(PackageManager):
         return env_name
 
     def get_active_environment_path(self) -> str:
+        # todo: seems not to work within pycharm, but works in the terminal. Investigate!
         environment_info = self.get_info()
         path = environment_info["env location"]
         return path
@@ -98,8 +99,30 @@ class MicromambaManager(PackageManager):
             "run",
             "--prefix",
             os.path.normpath(env_prefix),
-            "pip",
+            self._get_pip_exe(env_prefix),
             "list",
             "--format=json",
         ]
         return subprocess_args
+
+    def _get_base_install_package_args(
+        self,
+        package_name: str,
+        version: Optional[str] = None,
+        channel: str = "conda-forge",
+    ) -> List[str]:
+        pkg = package_name + (f"=={version}" if version else "")
+        subprocess_args = [
+            self.get_install_environment_executable(),
+            "install",
+            "-y",
+            "-c",
+            channel,
+            "-p",
+            os.path.normpath(self.get_base_environment_path()),
+            pkg,
+        ]
+        return subprocess_args
+
+    def _get_base_env_key(self) -> str:
+        return "base environment"

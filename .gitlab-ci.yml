@@ -65,6 +65,7 @@
     - 'echo "Environment path: $env:PATH" '
     - "conda init"
     - "conda config --set notify_outdated_conda false"
+    - "conda config --remove channels defaults"
     - "conda install -y mamba -c conda-forge"
     - "mamba create -y --channel=conda-forge -n album-environments python=3.10 pip"
     - "mamba activate album-environments"
@@ -105,6 +106,7 @@
     - 'echo "Environment path: $env:PATH" '
     - "conda init"
     - "conda config --set notify_outdated_conda false"
+    - "conda config --remove channels defaults"
     - "conda create -y --channel=conda-forge -n album-environments python=3.10 pip"
     - "conda activate album-environments"
     - "conda env list"
@@ -176,6 +178,7 @@
     - apt update
     - python -V
     - which python
+    - conda config --remove channels defaults
     - conda create -y --channel=conda-forge -n album-environments python=3.10 pip
     - conda init bash
     - source ~/.bashrc
@@ -214,6 +217,7 @@
     - mamba init
     - source /opt/conda/etc/profile.d/conda.sh # seems to be necessary to activate conda
     - source /opt/conda/etc/profile.d/mamba.sh # seems to be necessary to activate mamba
+    - mamba config --remove channels defaults
     - mamba create -y --channel=conda-forge -n album-environments python=3.10
     - mamba activate album-environments
     - mamba env list
@@ -286,6 +290,7 @@
     - bash $tmpdir/miniconda.sh -b -p $tmpdir/miniconda
     - export PATH=$PATH:$tmpdir/miniconda/bin/
     - echo $PATH
+    - conda config --remove channels defaults
     - conda create -y --channel=conda-forge -n album-environments python=3.10 pip git
     - source $tmpdir/miniconda/bin/activate
     - conda activate album-environments
@@ -326,6 +331,7 @@
     - source "$tmpdir/mambaforge/etc/profile.d/mamba.sh"
     - source "$tmpdir/mambaforge/etc/profile.d/conda.sh"
     - conda activate
+    - conda config --remove channels defaults
     - mamba create -y --channel=conda-forge -n album-environments python=3.10 pip git
     - mamba activate album-environments
     - mamba env list

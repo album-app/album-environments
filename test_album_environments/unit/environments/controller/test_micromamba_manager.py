@@ -104,7 +104,7 @@ class TestMicromambaManager(TestCommon):
     def test_create_environment_from_file_valid_file(self):
         self.assertFalse(self.micromamba.environment_exists(self.test_environment_path))
         env_file = """channels:
-- defaults
+- conda-forge
 dependencies:
 - python"""
         with open(self.test_base.joinpath("env_file.yml"), "w") as f:

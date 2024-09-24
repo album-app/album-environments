@@ -176,6 +176,7 @@
     - apt update
     - python -V
     - which python
+    - conda config --remove channels defaults
     - conda create -y --channel=conda-forge -n album-environments python=3.10 pip
     - conda init bash
     - source ~/.bashrc

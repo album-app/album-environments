@@ -253,26 +253,31 @@ def _run_process(
             text=True,
             encoding=sys.getfilesystemencoding(),
         )
-        while True:
-            output = None
-            if process.stdout is not None:
-                output = process.stdout.readline()
-            if output:
-                log.log_info(output.rstrip())
-            if process.poll() is not None:
-                # finish reading the output
-                while True:
-                    if process.stdout is not None:
-                        output = process.stdout.readline()
-                        if not output:
-                            break
-                        log.log_info(output.rstrip())
-                break
+        try:
+            while True:
+                output = None
+                if process.stdout is not None:
+                    output = process.stdout.readline()
+                if output:
+                    log.log_info(output.rstrip())
+                if process.poll() is not None:
+                    # finish reading the output
+                    while True:
+                        if process.stdout is not None:
+                            output = process.stdout.readline()
+                            if not output:
+                                break
+                            log.log_info(output.rstrip())
+                    break
 
-        sys.stdout.flush()
-        rc = process.poll()
-        if rc != 0:
-            raise SubProcessError(rc, "ERROR while running %s" % " ".join(command))
+            sys.stdout.flush()
+            rc = process.poll()
+            if rc != 0:
+                raise SubProcessError(rc, "ERROR while running %s" % " ".join(command))
+        finally:
+            if process.stdout is not None:
+                process.stdout.close()
+            log.close()
         return rc
     else:
         return subprocess.run(command, env=env, encoding=sys.getfilesystemencoding())

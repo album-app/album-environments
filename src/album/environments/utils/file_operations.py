@@ -1,12 +1,13 @@
+"""Utils for file operations."""
 import errno
 import os
 import shutil
 import stat
 import sys
 from pathlib import Path
+from typing import Any, Callable, Dict, Tuple, Union
 
 import yaml
-
 from album.runner import album_logging
 
 module_logger = album_logging.get_active_logger
@@ -15,9 +16,9 @@ enc = sys.getfilesystemencoding()
 win_shell = None
 
 
-def get_dict_from_yml(yml_file):
-    """Reads a dictionary from a file in yml format."""
-    with open(yml_file, "r") as yml_f:
+def get_dict_from_yml(yml_file: Union[str, Path]) -> Dict[str, Any]:
+    """Read a dictionary from a file in yml format."""
+    with open(yml_file) as yml_f:
         d = yaml.safe_load(yml_f)
 
     if not isinstance(d, dict):
@@ -26,8 +27,8 @@ def get_dict_from_yml(yml_file):
     return d
 
 
-def write_dict_to_yml(yml_file, d):
-    """Writes a dictionary to a file in yml format."""
+def write_dict_to_yml(yml_file: Union[str, Path], d: Dict[str, Any]) -> bool:
+    """Write a dictionary to a file in yml format."""
     yml_file = Path(yml_file)
     create_path_recursively(yml_file.parent)
 
@@ -37,16 +38,21 @@ def write_dict_to_yml(yml_file, d):
     return True
 
 
-def create_path_recursively(path):
-    """Creates a path. Creates missing parent folders."""
+def create_path_recursively(path: Union[str, Path]) -> bool:
+    """Create a path; Create missing parent folders."""
     p = Path(path)
     p.mkdir(parents=True, exist_ok=True)
 
     return True
 
 
-def copy_folder(folder_to_copy, destination, copy_root_folder=True, force_copy=False):
-    """Copies a folder to a destination.
+def copy_folder(
+    folder_to_copy: Union[str, Path],
+    destination: Union[str, Path],
+    copy_root_folder: bool = True,
+    force_copy: bool = False,
+) -> Path:
+    """Copy a folder to a destination.
 
     Args:
         folder_to_copy:
@@ -58,8 +64,6 @@ def copy_folder(folder_to_copy, destination, copy_root_folder=True, force_copy=F
             Else all files in the folder to copy.
         force_copy:
             boolean value. If true, removes the destination folder before copying.
-
-    Returns:
 
     """
     folder_to_copy = Path(folder_to_copy)
@@ -77,21 +81,22 @@ def copy_folder(folder_to_copy, destination, copy_root_folder=True, force_copy=F
     create_path_recursively(destination)
 
     for root, dirs, files in os.walk(folder_to_copy):
-        root = Path(root)
+        _root = Path(root)
 
         for d in dirs:
+            _d = Path(d)
             copy_folder(
-                root.joinpath(d), destination.joinpath(d), copy_root_folder=False
+                _root.joinpath(_d), destination.joinpath(_d), copy_root_folder=False
             )
         for fi in files:
-            copy(root.joinpath(fi), destination)
+            copy(_root.joinpath(fi), destination)
         break
 
     return destination
 
 
-def copy(file, path_to) -> Path:
-    """Copies a file A to either folder B or file B. Makes sure folder structure for target exists."""
+def copy(file: Union[str, Path], path_to: Union[str, Path]) -> Path:
+    """Copy a file A to either folder B or file B; Make sure folder structure for target exists."""
     file = Path(file)
     path_to = Path(path_to)
 
@@ -103,7 +108,8 @@ def copy(file, path_to) -> Path:
     return Path(shutil.copy(file, path_to))
 
 
-def force_remove(path, warning=True):
+def force_remove(path: Union[str, Path], warning: bool = True) -> None:
+    """Remove a file or folder; If it is read-only, change the flag."""
     path = Path(path)
     if path.exists():
         try:
@@ -122,8 +128,12 @@ def force_remove(path, warning=True):
                 raise e
 
 
-def handle_remove_readonly(func, path, exc):
-    """Changes readonly flag of a given path."""
+def handle_remove_readonly(
+    func: Callable,
+    path: Union[str, Path],
+    exc: Tuple[Any, Any, Any],
+) -> None:
+    """Change readonly flag of a given path."""
     excvalue = exc[1]
     if func in (os.rmdir, os.remove, os.unlink) and excvalue.errno == errno.EACCES:
         os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # 0777

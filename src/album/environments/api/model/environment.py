@@ -1,4 +1,6 @@
 from abc import ABCMeta, abstractmethod
+from pathlib import Path
+from typing import Union
 
 
 class IEnvironment:
@@ -14,17 +16,17 @@ class IEnvironment:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def name(self):
+    def name(self) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def yaml_file(self):
+    def yaml_file(self) -> Union[Path, None]:
         raise NotImplementedError
 
     @abstractmethod
-    def path(self):
+    def path(self) -> Union[Path, None]:
         raise NotImplementedError
 
     @abstractmethod
-    def set_path(self, path):
+    def set_path(self, path: Path) -> None:
         raise NotImplementedError

@@ -1,10 +1,7 @@
 import time
 import unittest
 
-from test_album_environments.unit.environments.controller import (
-    test_conda_manager,
-    test_environment_handler,
-)
+from test_album_environments.unit.environments.controller import test_conda_manager
 
 
 def main():
@@ -12,7 +9,6 @@ def main():
     suite = unittest.TestSuite()
 
     suite.addTests(loader.loadTestsFromModule(test_conda_manager))
-    suite.addTests(loader.loadTestsFromModule(test_environment_handler))
 
     runner = unittest.TextTestRunner(verbosity=3)
     result = runner.run(suite)

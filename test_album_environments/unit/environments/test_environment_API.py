@@ -1,14 +1,14 @@
 import unittest.mock
 
-from album.environments.controller.environment_handler import EnvironmentHandler
+from album.environments.environment_api import EnvironmentAPI
 from test_album_environments.test_common import TestCommon
 
 
-class TestEnvironmentManager(TestCommon):
+class TestEnvironmentAPI(TestCommon):
     def setUp(self):
         super().setUp()
-        #FIXME
-        self.environment_manager = EnvironmentHandler()
+        # FIXME
+        self.environment_manager = EnvironmentAPI()
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -35,15 +35,5 @@ class TestEnvironmentManager(TestCommon):
 
     @unittest.skip("Needs to be implemented!")
     def test_get_installed_package_manager(self):
-        # ToDo: implement!
-        pass
-
-    @unittest.skip("Needs to be implemented!")
-    def test_check_for_executable(self):
-        # ToDo: implement!
-        pass
-
-    @unittest.skip("Needs to be implemented!")
-    def test_build_conda_executable(self):
         # ToDo: implement!
         pass

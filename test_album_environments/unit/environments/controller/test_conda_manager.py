@@ -1,10 +1,11 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from album.environments.controller.conda_manager import CondaManager
+from album.environments.initialization import PackageManagerHandler
 from album.environments.model.environment import Environment
 from test_album_environments.test_common import TestCommon
 
@@ -14,28 +15,54 @@ class TestCondaManager(TestCommon):
 
     def setUp(self):
         super().setUp()
-        self.tmp_dir_obj = tempfile.TemporaryDirectory()
-        self.test_base = Path(self.tmp_dir_obj.name)
-        self.test_environment_path = self.test_base.joinpath(self.test_environment_name)
-        self.tmp_dir = Path(tempfile.TemporaryDirectory().name)
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.conda = CondaManager("conda", base_env_path=self.test_base)
+        self.test_base = Path(self.test_base_dir.name)
+        self.test_environment_path = self.test_base_envs.joinpath(self.test_environment_name)
+
+        if "ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH" in os.environ.keys():
+            if os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]:
+                del os.environ["ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"]
+
+        if "ENVIRONMENT_DEBUGGING_MAMBA_PATH" in os.environ.keys():
+            if os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"):
+                del os.environ["ENVIRONMENT_DEBUGGING_MAMBA_PATH"]
+
+        # ensure no env vars are set
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH"))
+        self.assertIsNone(os.environ.get("ENVIRONMENT_DEBUGGING_MAMBA_PATH"))
+        self.assertIsNotNone(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"))
+
+        self.assertTrue(Path(os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH")).exists())
+
+        # uses conda from CICD path
+        package_manager_handler = PackageManagerHandler(
+            base_env_path=str(self.test_base_envs),
+            installation_path=str(Path(self.test_base_dir.name)),
+            micromamba_path=None,
+            mamba_path=None,
+            conda_path=os.environ.get("ENVIRONMENT_DEBUGGING_CONDA_PATH"),
+            conda_lock_path=None,
+        )
+
+        self.conda = package_manager_handler.get_package_manager()
+
 
     def tearDown(self) -> None:
         if self.conda.environment_exists(self.test_environment_path):
             self.conda.remove_environment(self.test_environment_path)
             self.assertFalse(self.conda.environment_exists(self.test_environment_path))
-        self.tmp_dir_obj.cleanup()
+        self.test_base_dir.cleanup()
         super().tearDown()
 
     def test_get_environment_list(self):
-        base_dir = self.test_base
-        expected = list()
-        expected.append(base_dir.joinpath("envName1").resolve())
-        expected.append(base_dir.joinpath("envName2").resolve())
+        expected = [
+            self.test_base_envs.joinpath("envName1").resolve(),
+            self.test_base_envs.joinpath("envName2").resolve()
+        ]
+        # create some content
         Path(expected[0]).joinpath("somefile").mkdir(parents=True)
         Path(expected[1]).joinpath("somefile").mkdir(parents=True)
 
+        # get the list
         res = self.conda.get_environment_list()
 
         self.assertListEqual(expected, res)
@@ -74,25 +101,32 @@ class TestCondaManager(TestCommon):
 
         self.assertIsNotNone(r)
 
-    def test_create_environment_from_file_valid_file(self):
+    @patch("album.environments.controller.conda_manager.CondaManager._install")
+    def test_create_environment_from_file_valid_file(self, install_mock):
         self.assertFalse(self.conda.environment_exists(self.test_environment_path))
-        env_file = """{}"""
-        with open(self.tmp_dir.joinpath("env_file.yml"), "w") as f:
+        env_file = """
+name: unittest
+channels:
+  - conda-forge
+dependencies:
+  - python
+"""
+        with open(self.test_base.joinpath("env_file.yml"), "w") as f:
             f.writelines(env_file)
         self.conda.create_environment_from_file(
-            self.tmp_dir.joinpath("env_file.yml"), self.test_environment_path
+            self.test_base.joinpath("env_file.yml"), self.test_environment_path
         )
-        self.assertTrue(self.conda.environment_exists(self.test_environment_path))
+        self.assertEqual(1, install_mock.call_count)
 
     def test_create_environment_from_file_invalid(self):
         # wrong file ending
         with self.assertRaises(NameError):
             self.conda.create_environment_from_file(
-                self.tmp_dir.joinpath("env.tiff"), self.test_environment_name
+                self.test_base.joinpath("env.tiff"), self.test_environment_name
             )
 
     def test_create_environment_from_file_valid_but_empty(self):
-        t = self.tmp_dir.joinpath("%s.yml" % self.test_environment_name)
+        t = self.test_base.joinpath("%s.yml" % self.test_environment_name)
         t.touch()
         # no content in file
         with self.assertRaises(ValueError):
@@ -163,10 +197,19 @@ class TestCondaManager(TestCommon):
             ]"""
         )
         environment = Environment(None, "aName", "aPath")
+
+
+        # generally, test whether python is installed
         self.assertTrue(self.conda.is_installed(environment.path(), "python"))
-        self.assertTrue(self.conda.is_installed(environment.path(), "python", "3.9.5"))
-        self.assertFalse(self.conda.is_installed(environment.path(), "python", "500.1"))
-        self.assertTrue(self.conda.is_installed(environment.path(), "python", "2.7"))
+
+        # we test for minimal package version that is available.
+        self.assertTrue(self.conda.is_installed(environment.path(), "python", min_package_version="3.9.5"))
+        self.assertFalse(self.conda.is_installed(environment.path(), "python", min_package_version="500.1"))
+        self.assertTrue(self.conda.is_installed(environment.path(), "python", min_package_version="2.7"))
+
+        # testing for exact package version
+        self.assertTrue(self.conda.is_installed(environment.path(), "python", package_version="3.9.5"))
+        self.assertFalse(self.conda.is_installed(environment.path(), "python", package_version="3.9.4"))
 
     @patch(
         "album.environments.utils.subcommand.run",
@@ -265,6 +308,20 @@ class TestCondaManager(TestCommon):
 
         create_mock.assert_called_once_with(environment, "TestVersion")
 
-
-if __name__ == "__main__":
-    unittest.main()
+    @patch("album.environments.controller.package_manager.PackageManager.list_environment")
+    def test_get_package_version(self, list_environment_mock):
+        list_environment_mock.return_value = json.loads(
+            """[
+                {
+                    "base_url": "https://repo.anaconda.com/pkgs/main",
+                    "build_number": 3,
+                    "build_string": "hdb3f193_3",
+                    "channel": "pkgs/main",
+                    "dist_name": "python-3.9.5-hdb3f193_3",
+                    "name": "python",
+                    "platform": "linux-64",
+                    "version": "3.9.5"
+                }
+            ]"""
+        )
+        self.assertEqual("3.9.5", self.conda.get_package_version(Path("aPath"), "python"))

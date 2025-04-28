@@ -28,7 +28,7 @@
     - "& $7ZIP_EXE x micromamba.tar.bz2 -aoa"
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + $Env:MAMBA_ROOT_PREFIX)'
     - "$progressPreference = $oldProgressPreference"
-    - '.\micromamba\Library\bin\micromamba.exe create -y -n album-environments -c conda-forge python=3.10'
+    - '.\micromamba\Library\bin\micromamba.exe create -y -n album-environments -c conda-forge python=$env:TEST_PYTHON_VERSION'
     - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments pip install -e .'
     - '.\micromamba\Library\bin\micromamba.exe run -p .\micromamba\envs\album-environments pip install coverage'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
@@ -66,7 +66,7 @@
     - "conda init"
     - "conda config --set notify_outdated_conda false"
     - "conda install -y mamba -c conda-forge"
-    - "mamba create -y --channel=conda-forge -n album-environments python=3.10 pip"
+    - "mamba create -y --channel=conda-forge -n album-environments python=$env:TEST_PYTHON_VERSION pip"
     - "mamba activate album-environments"
     - "mamba env list"
     - "$Env:ENVIRONMENT_DEBUGGING_MAMBA_PATH=(Get-Command mamba).Source"
@@ -105,7 +105,7 @@
     - 'echo "Environment path: $env:PATH" '
     - "conda init"
     - "conda config --set notify_outdated_conda false"
-    - "conda create -y --channel=conda-forge -n album-environments python=3.10 pip"
+    - "conda create -y --channel=conda-forge -n album-environments python=$env:TEST_PYTHON_VERSION pip"
     - "conda activate album-environments"
     - "conda env list"
     - "$Env:ENVIRONMENT_DEBUGGING_CONDA_PATH=(Get-Command conda).Source"
@@ -140,7 +140,7 @@
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
-    - micromamba create -y -n album-environments -c conda-forge python=3.10
+    - micromamba create -y -n album-environments -c conda-forge python=$env:TEST_PYTHON_VERSION
     - micromamba activate album-environments
     - pip install . # should install conda-lock
     - python -V
@@ -177,7 +177,7 @@
     - python -V
     - which python
     - conda config --remove channels defaults
-    - conda create -y --channel=conda-forge -n album-environments python=3.10 pip
+    - conda create -y --channel=conda-forge -n album-environments python=$env:TEST_PYTHON_VERSION pip
     - conda init bash
     - source ~/.bashrc
     - conda activate album-environments
@@ -215,7 +215,7 @@
     - mamba init
     - source /opt/conda/etc/profile.d/conda.sh # seems to be necessary to activate conda
     - source /opt/conda/etc/profile.d/mamba.sh # seems to be necessary to activate mamba
-    - mamba create -y --channel=conda-forge -n album-environments python=3.10
+    - mamba create -y --channel=conda-forge -n album-environments python=$env:TEST_PYTHON_VERSION
     - mamba activate album-environments
     - mamba env list
     - pip install .
@@ -254,7 +254,7 @@
     - mkdir -p $tmpdir/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/1.5.6  | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - eval "$($tmpdir/bin/micromamba shell hook -s posix)"
-    - micromamba create -y -n album-environments -c conda-forge python=3.10
+    - micromamba create -y -n album-environments -c conda-forge python=$env:TEST_PYTHON_VERSION
     - micromamba activate album-environments
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
@@ -287,7 +287,7 @@
     - bash $tmpdir/miniconda.sh -b -p $tmpdir/miniconda
     - export PATH=$PATH:$tmpdir/miniconda/bin/
     - echo $PATH
-    - conda create -y --channel=conda-forge -n album-environments python=3.10 pip git
+    - conda create -y --channel=conda-forge -n album-environments python=$env:TEST_PYTHON_VERSION pip git
     - source $tmpdir/miniconda/bin/activate
     - conda activate album-environments
     - conda env list

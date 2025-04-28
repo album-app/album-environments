@@ -140,7 +140,7 @@
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
-    - micromamba create -y -n album-environments -c conda-forge python=$env:TEST_PYTHON_VERSION
+    - micromamba create -y -n album-environments -c conda-forge python=$TEST_PYTHON_VERSION
     - micromamba activate album-environments
     - pip install . # should install conda-lock
     - python -V
@@ -167,7 +167,7 @@
 #
 # Uses a docker image where conda is already installed.
 #
-.linux_base_template_conda:
+.linux_base_template_conda: # unused, remove in future release
   image: continuumio/miniconda3:latest
   tags:
     - docker
@@ -203,7 +203,7 @@
 # Uses a docker image where conda is already installed.
 # Creates an album environment.
 #
-.linux_base_template_conda_with_mamba:
+.linux_base_template_conda_with_mamba: # unused, remove in future release
   image: condaforge/mambaforge:latest
   tags:
     - docker
@@ -254,7 +254,7 @@
     - mkdir -p $tmpdir/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/1.5.6  | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - eval "$($tmpdir/bin/micromamba shell hook -s posix)"
-    - micromamba create -y -n album-environments python=$TEST_PYTHON_VERSION -c conda-forge 
+    - micromamba create -y -n album-environments python=$TEST_PYTHON_VERSION -c conda-forge
     - micromamba activate album-environments
     - pip install --no-cache-dir https://gitlab.com/album-app/album-environments/-/archive/$CI_COMMIT_REF_NAME/album-environments-$CI_COMMIT_REF_NAME.zip
     - python -V
@@ -273,7 +273,7 @@
 # Installs miniconda in a fresh tmp directory and activates it.
 # DO NOT ALLOW JOBS TO BE RUN IN PARALLEL!
 #
-.macos_base_template_conda:
+.macos_base_template_conda: # unused, remove in future release
   tags:
     - macos
     - shell
@@ -310,7 +310,7 @@
 # DO NOT ALLOW JOBS TO BE RUN IN PARALLEL!
 #
 
-.macos_base_template_conda_with_mamba:
+.macos_base_template_conda_with_mamba: # unused, remove in future release
   tags:
     - macos
     - shell
@@ -462,13 +462,13 @@ linux micromamba unit tests:
     paths:
       - unit.coverage
 
-#linux conda unit tests:
+#linux conda unit tests:  #  unused, remove in future release
 #  extends: .linux_base_template_conda
 #  stage: test
 #  script:
 #    - python -m unittest test_album_environments/unit/run_all_unit_conda.py
 #
-#linux mamba unit tests:
+#linux mamba unit tests:  #  unused, remove in future release
 #  extends: .linux_base_template_conda_with_mamba
 #  stage: test
 #  script:
@@ -487,13 +487,13 @@ linux micromamba integration tests:
     paths:
       - integration.coverage
 
-#linux conda integration tests:
+#linux conda integration tests:  #  unused, remove in future release
 #  extends: .linux_base_template_conda
 #  stage: test
 #  script:
 #    - python -m unittest test_album_environments/integration/run_all_integration_conda.py
 #
-#linux mamba integration tests:
+#linux mamba integration tests:  #  unused, remove in future release
 #  extends: .linux_base_template_conda_with_mamba
 #  stage: test
 #  script:
@@ -511,13 +511,13 @@ macos micromamba unit tests:
   script:
     - python -m unittest test_album_environments/unit/run_all_unit_micromamba.py
 
-#macos conda unit tests:
+#macos conda unit tests:  #  unused, remove in future release
 #  extends: .macos_base_template_conda
 #  stage: test
 #  script:
 #    - python -m unittest test_album_environments/unit/run_all_unit_conda.py
 #
-#macos mamba unit tests:
+#macos mamba unit tests:  #  unused, remove in future release
 #  extends: .macos_base_template_conda_with_mamba
 #  stage: test
 #  script:
@@ -531,13 +531,13 @@ macos micromamba integration tests:
   script:
     - python -m unittest test_album_environments/integration/run_all_integration_micromamba.py
 
-#macos conda integration tests:
+#macos conda integration tests:  #  unused, remove in future release
 #  extends: .macos_base_template_conda
 #  stage: test
 #  script:
 #    - python -m unittest test_album_environments/integration/run_all_integration_conda.py
 #
-#macos mamba integration tests:
+#macos mamba integration tests:  #  unused, remove in future release
 #  extends: .macos_base_template_conda_with_mamba
 #  stage: test
 #  script:
@@ -563,14 +563,14 @@ windows micromamba unit tests:
     paths:
       - unit.coverage
 
-#windows mamba unit tests:
+#windows mamba unit tests:  #  unused, remove in future release
 #  extends: .windows_base_template_conda_with_mamba
 #  stage: test
 #  script:
 #    # we need to spawn an extra powershell to properly activate the environment
 #    - $cmnd = powershell.exe -command { mamba activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
 #
-#windows conda unit tests:
+#windows conda unit tests:  #  unused, remove in future release
 #  extends: .windows_base_template_conda
 #  stage: test
 #  script:
@@ -593,14 +593,14 @@ windows micromamba integration tests:
     paths:
       - integration.coverage
 
-#windows mamba integration tests:
+#windows mamba integration tests:  #  unused, remove in future release
 #  extends: .windows_base_template_conda_with_mamba
 #  stage: test
 #  script:
 #    # we need to spawn an extra powershell to properly activate the environment
 #    - $cmnd = powershell.exe -command {conda activate album-environments 2>&1 | Write-Host; pip install --no-cache-dir . 2>&1 | Write-Host; python -m unittest test_album_environments\unit\run_all_unit_conda_with_mamba.py 2>&1 | Write-Host; exit($lastexitcode)}
 #
-#windows conda integration tests:
+#windows conda integration tests:  #  unused, remove in future release
 #  extends: .windows_base_template_conda
 #  stage: test
 #  script:

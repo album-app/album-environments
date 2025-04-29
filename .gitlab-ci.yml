@@ -280,7 +280,7 @@ windows micromamba unit tests:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - '.\micromamba_installation\Library\bin\micromamba.exe run -n album coverage run --omit .\test_album_environments\* -m unittest test_album_environments\unit\run_all_unit_micromamba.py'
+    - '.\micromamba_installation\Library\bin\micromamba.exe run -n album coverage run -m unittest test_album_environments\unit\run_all_unit_micromamba.py'
     - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba_installation\Library\bin\micromamba.exe run -n album coverage report }'
     - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba_installation\Library\bin\micromamba.exe run -n album coverage xml } '
     - 'Rename-Item -Path ".coverage" -NewName "unit.coverage"'
@@ -296,7 +296,7 @@ windows micromamba integration tests:
   extends: .windows_base_template_micromamba
   stage: test
   script:
-    - '.\micromamba_installation\Library\bin\micromamba.exe run -n album coverage run --omit .\test_album_environments\* -m unittest test_album_environments\integration\run_all_integration_micromamba.py'
+    - '.\micromamba_installation\Library\bin\micromamba.exe run -n album coverage run -m unittest test_album_environments\integration\run_all_integration_micromamba.py'
     - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba_installation\Library\bin\micromamba.exe run -n album coverage report }'
     - 'if ($lastexitcode -ne 0) {exit(1)} else { .\micromamba_installation\Library\bin\micromamba.exe run -n album coverage xml } '
     - 'Rename-Item -Path ".coverage" -NewName "integration.coverage"'
@@ -330,7 +330,7 @@ create combined coverage for linux:
         coverage_format: cobertura
         path: coverage.xml
 
-.create combined coverage for windows:
+create combined coverage for windows:
   extends: .windows_base_template_micromamba
   stage: test
   dependencies:
@@ -340,7 +340,10 @@ create combined coverage for linux:
     - windows micromamba unit tests
     - windows micromamba integration tests
   script:
-    - $cmnd = powershell.exe -command {micromamba activate album 2>&1 | Write-Host; coverage combine unit.coverage integration.coverage 2>&1 | Write-Host; coverage report 2>&1| Write-Host; coverage xml 2>&1| Write-Host; exit($lastexitcode)}
+    - '.\micromamba_installation\Library\bin\micromamba.exe run -n album coverage combine unit.coverage integration.coverage'
+    - '.\micromamba_installation\Library\bin\micromamba.exe run -n album coverage report'
+    - '.\micromamba_installation\Library\bin\micromamba.exe run -n album coverage xml'
+    - "exit($lastexitcode)"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     reports:

@@ -270,7 +270,9 @@ def _run_process(
                             log.log_info(output.rstrip())
                     break
 
-            sys.stdout.flush()
+            if sys.stdout is not None:  # Can be None in some environments
+                sys.stdout.flush()
+
             rc = process.poll()
             if rc != 0:
                 raise SubProcessError(rc, "ERROR while running %s" % " ".join(command))

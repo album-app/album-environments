@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "album-environments"
+version = "0.3.1"
+authors = [
+    {name = "Kyle Harrington", email = "album@kyleharrington.com"},
+    {name = "Jan Philipp Albrecht", email = "j.p.albrecht@fu-berlin.de"},
+    {name = "Deborah Schmidt", email = "mail@frauzufall.de"}
+]
+maintainers = [
+    {name = "Kyle Harrington", email = "album@kyleharrington.com"},
+    {name = "Jan Philipp Albrecht", email = "j.p.albrecht@fu-berlin.de"},
+    {name = "Deborah Schmidt", email = "mail@frauzufall.de"}
+]
+description = "Album is a framework for unifying computational tools across frameworks, languages, and environments."
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+keywords = ["virtual environments", "imaging", "data analysis"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Utilities"
+]
+requires-python = ">=3.7"
+dependencies = [
+    "pyyaml>=5.4.1",
+    "validators>=0.18.2",
+    "requests>=2.25.1",
+    "jsonschema>=4.0.0",
+    "pre-commit>=2.20.0",
+    "conda-lock>=1.4.0",
+    "album-solution-api>=0.7.0",
+    "pooch>=1.8.1",
+]
+
+[project.urls]
+Documentation = "https://docs.album.solutions/en/latest/"
+Homepage = "https://album.solutions/"
+DeveloperDocumentation = "https://gitlab.com/album-app/album/-/wikis/home"
+Repository = "https://gitlab.com/album-app/album-environments"
+Tracker= "https://gitlab.com/album-app/album-environments/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

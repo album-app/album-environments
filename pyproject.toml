@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "album-environments"
-version = "0.3.1"
+version = "0.3.2"
 authors = [
     {name = "Kyle Harrington", email = "album@kyleharrington.com"},
     {name = "Jan Philipp Albrecht", email = "j.p.albrecht@fu-berlin.de"},

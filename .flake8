@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 120
+per-file-ignores =
+    src/album/environments/controller/*.py:D1
+    src/album/environments/model/*.py:D1
+    src/album/environments/environment_api.py:D1

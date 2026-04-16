@@ -24,15 +24,16 @@
     - "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12" # set Security download protocol to avoid https errors
     - "if(-Not (Test-Path $7ZIP_EXE)) {if(-Not (Test-Path $7ZIP_INSTALLER)){Invoke-Webrequest -URI https://www.7-zip.org/a/7z2201-x64.exe -OutFile $7ZIP_INSTALLER}}"
     - 'if(-Not (Test-Path $7ZIP_EXE)) {Start-Process -FilePath $7ZIP_INSTALLER -Args "/S" -Verb RunAs -Wait}'
-    - "Invoke-Webrequest -URI https://micro.mamba.pm/api/micromamba/win-64/1.5.6 -OutFile micromamba.tar.bz2"
+    - "Invoke-Webrequest -URI https://micro.mamba.pm/api/micromamba/win-64/$env:MICROMAMBA_CI_VERSION -OutFile micromamba.tar.bz2"
     - "& $7ZIP_EXE x micromamba.tar.bz2 -aoa"
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + $Env:MAMBA_ROOT_PREFIX)'
     - "$progressPreference = $oldProgressPreference"
     - '.\micromamba_installation\Library\bin\micromamba.exe create -y -n album -c conda-forge python=$env:TEST_PYTHON_VERSION'
+    - '.\micromamba_installation\Library\bin\micromamba.exe --version'
     - 'Write-Output "CI_COMMIT_REF_NAME: $env:CI_COMMIT_REF_NAME"'
-    - 'Write-Output "ALBUM_DEV_ONLY: $env:ALBUM_DEV_ONLY"'
-    - 'if($env:ALBUM_DEV_ONLY -match "True") { echo "CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_ONLY GITLAB-RUNNER VARIABLE." }'
-    - 'if($env:ALBUM_DEV_ONLY -match "True") { .\micromamba_installation\Library\bin\micromamba.exe run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev}'
+    - 'Write-Output "ALBUM_DEV_ENVIRONMENTS: $env:ALBUM_DEV_ENVIRONMENTS"'
+    - 'if($env:ALBUM_DEV_ENVIRONMENTS -match "True") { echo "CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_ENVIRONMENTS GITLAB-RUNNER VARIABLE." }'
+    - 'if($env:ALBUM_DEV_ENVIRONMENTS -match "True") { .\micromamba_installation\Library\bin\micromamba.exe run -n album pip install git+https://gitlab.com/album-app/album-solution-api.git@dev}'
     - '.\micromamba_installation\Library\bin\micromamba.exe run -n album pip install --no-cache-dir $Env:CI_PROJECT_DIR'
     - '.\micromamba_installation\Library\bin\micromamba.exe run -n album pip install coverage'
     - 'Get-ChildItem Env: | Where-Object { $_.Name -match "album" -or $_.Value -match "album" } | Format-Table -AutoSize'
@@ -59,21 +60,24 @@
     - docker
   before_script:
     - df -h
-    - apt update
-    - apt install -y curl
-    - apt install -y bzip2
+    - apt update || (sleep 30 && apt update) && apt install -y curl bzip2 git
     - export MAMBA_ROOT_PREFIX=$CI_PROJECT_DIR/micromamba
     - mkdir -p $CI_PROJECT_DIR/bin/
-    - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/1.5.6 | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
+    - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
     - micromamba create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION
     - micromamba activate album
+    - micromamba --version
+    - echo "CI_COMMIT_REF_NAME:$CI_COMMIT_REF_NAME"
+    - echo "ALBUM_DEV_ENVIRONMENTS:$ALBUM_DEV_ENVIRONMENTS"
+    - if [ "$ALBUM_DEV_ENVIRONMENTS" = "True" ]; then echo "CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_ENVIRONMENTS GITLAB-RUNNER VARIABLE."; fi
+    - if [ "$ALBUM_DEV_ENVIRONMENTS" = "True" ]; then pip install git+https://gitlab.com/album-app/album-solution-api.git@dev; fi
     - pip install --no-cache-dir $CI_PROJECT_DIR # should install conda-lock
     - python -V
     - python -c "import shutil; print(shutil.which(\"micromamba\"))"
     - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
     - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$CI_PROJECT_DIR/bin/micromamba
-    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock) # explicitly set conda-lock path as it comes as dependency
+    - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock) # explicitly set conda-lock path as it comes as dependenc
     - pip install coverage
     - pip list
     - env -0 | sort -z | tr '\0' '\n' | grep -i album
@@ -102,10 +106,15 @@
     - export MAMBA_ROOT_PREFIX=$tmpdir/micromamba
     - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$tmpdir/bin/micromamba
     - mkdir -p $tmpdir/bin/
-    - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/1.5.6  | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
+    - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/$MICROMAMBA_CI_VERSION  | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - eval "$($tmpdir/bin/micromamba shell hook -s posix)"
     - micromamba create -y -n album python=$TEST_PYTHON_VERSION -c conda-forge
     - micromamba activate album
+    - micromamba --version
+    - echo "CI_COMMIT_REF_NAME:$CI_COMMIT_REF_NAME"
+    - echo "ALBUM_DEV_ENVIRONMENTS:$ALBUM_DEV_ENVIRONMENTS"
+    - if [ "$ALBUM_DEV_ENVIRONMENTS" = "True" ]; then echo "CAUTION! DEV ONLY OPTION ACTIVE. ENABLE/DISABLE BY SETTING ALBUM_DEV_ENVIRONMENTS GITLAB-RUNNER VARIABLE."; fi
+    - if [ "$ALBUM_DEV_ENVIRONMENTS" = "True" ]; then pip install git+https://gitlab.com/album-app/album-solution-api.git@dev; fi
     - pip install --no-cache-dir $CI_PROJECT_DIR
     - python -V
     - python -c "import shutil; print(shutil.which(\"micromamba\"))"

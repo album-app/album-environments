@@ -60,7 +60,7 @@
     - docker
   before_script:
     - df -h
-    - apt update || (sleep 30 && apt update) && apt install -y curl bzip2
+    - apt update || (sleep 30 && apt update) && apt install -y curl bzip2 git
     - export MAMBA_ROOT_PREFIX=$CI_PROJECT_DIR/micromamba
     - mkdir -p $CI_PROJECT_DIR/bin/
     - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba

@@ -78,6 +78,7 @@
     - python -c "import shutil; print(shutil.which(\"conda-lock\"))"
     - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$CI_PROJECT_DIR/bin/micromamba
     - export ENVIRONMENT_CONDA_LOCK_PATH=$(which conda-lock) # explicitly set conda-lock path as it comes as dependenc
+    - pip install coverage
     - pip list
     - env -0 | sort -z | tr '\0' '\n' | grep -i album
   variables:

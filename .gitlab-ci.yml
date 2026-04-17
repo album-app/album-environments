@@ -60,10 +60,11 @@
     - docker
   before_script:
     - df -h
-    - apt update || (sleep 30 && apt update) && apt install -y curl bzip2 git
+    - apt update || (sleep 30 && apt update) && apt install -y ca-certificates curl bzip2 git
     - export MAMBA_ROOT_PREFIX=$CI_PROJECT_DIR/micromamba
     - mkdir -p $CI_PROJECT_DIR/bin/
-    - curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION | tar -xvj -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
+    - curl -fsSL --retry 5 --retry-delay 3 https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION -o /tmp/micromamba.tar.bz2
+    - tar -xvjf /tmp/micromamba.tar.bz2 -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
     - micromamba create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION
     - micromamba activate album
@@ -106,7 +107,8 @@
     - export MAMBA_ROOT_PREFIX=$tmpdir/micromamba
     - export ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH=$tmpdir/bin/micromamba
     - mkdir -p $tmpdir/bin/
-    - curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/$MICROMAMBA_CI_VERSION  | tar -xvj -C $tmpdir/bin/ --strip-components=1 bin/micromamba
+    - curl -fsSL --retry 5 --retry-delay 3 https://micro.mamba.pm/api/micromamba/osx-64/$MICROMAMBA_CI_VERSION -o $tmpdir/micromamba.tar.bz2
+    - tar -xvjf $tmpdir/micromamba.tar.bz2 -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - eval "$($tmpdir/bin/micromamba shell hook -s posix)"
     - micromamba create -y -n album python=$TEST_PYTHON_VERSION -c conda-forge
     - micromamba activate album

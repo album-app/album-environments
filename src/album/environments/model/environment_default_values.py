@@ -4,39 +4,42 @@ from enum import Enum
 
 class EnvironmentDefaultValues(Enum):
     # micromamba
-    micromamba_url_linux_X86_64 = "https://micro.mamba.pm/api/micromamba/linux-64/1.5.6"
+    micromamba_url_linux_X86_64 = "https://micro.mamba.pm/api/micromamba/linux-64/2.5.0"
     micromamba_url_linux_X86_64_hash = (
-        "efe462c7ffcae8b338c7dd7b168ce8d48cfc60b48ab991d02a035c3b8d73633c"
+        "cec496f2299f9ceb5f5e23fc2ccf081fffda0c4bc87a6fdab575bf1e04f103b6"
     )
 
     micromamba_url_linux_ARM64 = (
-        "https://micro.mamba.pm/api/micromamba/linux-aarch64/1.5.6"
+        "https://micro.mamba.pm/api/micromamba/linux-aarch64/2.5.0"
     )
     micromamba_url_linux_ARM64_hash = (
-        "37b17006eff1dd6ff797ec59ec19b1f9e50f518dbbfe684f15b2fd5d3d1f529a"
+        "6ec1517c8c89c875a8fa93f9c66abd4fe3dd147341376bdc37b57c526bc13e44"
     )
 
     micromamba_url_linux_POWER = (
-        "https://micro.mamba.pm/api/micromamba/linux-ppc64le/1.5.6"
+        "https://micro.mamba.pm/api/micromamba/linux-ppc64le/2.5.0"
     )
     micromamba_url_linux_POWER_hash = (
-        "4cffe81de8bc5281984d8085de5481a88f73ecbd1d9cb77c1149408e5bdbb5ef"
+        "337d86dbaad0e3ef220a2e943106180fddf6a887bb854dc53efd640a948a92c0"
     )
 
-    micromamba_url_osx_X86_64 = "https://micro.mamba.pm/api/micromamba/osx-64/1.5.6"
+    micromamba_url_osx_X86_64 = "https://micro.mamba.pm/api/micromamba/osx-64/2.5.0"
     micromamba_url_osx_X86_64_hash = (
-        "17636ef379560a43fd49524e1c802238ce69f88d39e43285b23a7920bcb404a1"
+        "2d6ab968ba08c003e43642f55afded1f0fc4247387f04e340cdc6a0129d9c550"
     )
 
-    micromamba_url_osx_ARM64 = "https://micro.mamba.pm/api/micromamba/osx-arm64/1.5.6"
+    micromamba_url_osx_ARM64 = "https://micro.mamba.pm/api/micromamba/osx-arm64/2.5.0"
     micromamba_url_osx_ARM64_hash = (
-        "b22ad01c4fe0cc24c72c642068363faea0d5c868f403f6568fcf41bfe4c3052c"
+        "74d1f250b1505cd4d78728bd8b0b7f0ffbaa660b18042f15f7b610c16102d201"
     )
 
-    # need self-hosted installation for windows due to unzip issues
-    micromamba_url_windows = "https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/win-64_micromamba-1.5.6-0.zip?ref_type=heads&inline=false"  # noqa: E501
+    # Self-hosted zip for Windows — Python's tarfile r:bz2 may fail on minimal
+    # Windows Python installations missing libbz2.  The CI also uses 7-Zip rather
+    # than Python for bz2 extraction.  Keep the zip workaround until tar.bz2
+    # extraction is verified across all Windows targets.
+    micromamba_url_windows = "https://gitlab.com/album-app/plugins/album-package/-/raw/micromamba_installer/win-64_micromamba-2.5.0-0.zip?ref_type=heads&inline=false"  # noqa: E501
     micromamba_url_windows_hash = (
-        "75f4483892beca793316989422f8f4fbd528803cf603c651264f27abfcea43d3"
+        "f63a1a0eb7ac9849eab8169301c45afc7b4b4cf394d80f07d29d01be3ec00138"
     )
 
     micromamba_base_prefix = (

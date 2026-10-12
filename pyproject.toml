@@ -41,10 +41,16 @@ dependencies = [
     "validators>=0.18.2",
     "requests>=2.25.1",
     "jsonschema>=4.0.0",
-    "pre-commit>=2.20.0",
     "conda-lock>=1.4.0",
     "album-solution-api>=0.7.0,<0.8.0",
     "pooch>=1.8.1",
+]
+
+# Only needed to develop album-environments, never installed with it.
+# Install with "pip install --group dev" (pip >= 25.1).
+[dependency-groups]
+dev = [
+    "pre-commit>=2.20.0", # runs the hooks of .pre-commit-config.yaml
 ]
 
 [project.urls]

@@ -16,6 +16,11 @@ We use the following:
 
 ## [unreleased]
 
+### Changed
+
+- pre-commit is no longer installed with album-environments, only its developers need it: it is in the dependency
+  group `dev` (`pip install --group dev`, pip >= 25.1)
+
 ## [0.3.2]
 
 ### Changed

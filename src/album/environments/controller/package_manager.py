@@ -197,6 +197,18 @@ class PackageManager(IPackageManager):
         subprocess_args = self._get_run_script_args(environment.path(), script)  # type: ignore
         if argv and len(argv) > 1:
             subprocess_args.extend(argv[1:])
+        self._run_script_process(subprocess_args, environment_variables, pipe_output)
+
+    def _run_script_process(
+        self,
+        subprocess_args: List[str],
+        environment_variables: Union[
+            Mapping,
+            None,
+        ],
+        pipe_output: bool,
+    ) -> None:
+        """Start the process assembled by run_script. Package managers can override this to adapt the call."""
         subcommand.run(
             subprocess_args, pipe_output=pipe_output, env=environment_variables
         )

@@ -21,6 +21,13 @@ We use the following:
 - pre-commit is no longer installed with album-environments, only its developers need it: it is in the dependency
   group `dev` (`pip install --group dev`, pip >= 25.1)
 
+### Fixed
+
+- parallel solution runs no longer wait for each other on micromamba's shared process registry
+  `~/.cache/mamba/proc` ("Cannot lock ... Waiting for other mamba process to finish") and no longer fail
+  occasionally while reading it: every `micromamba run` gets a private, temporary registry (album#227).
+  Set `ENVIRONMENT_MICROMAMBA_RUN_PRIVATE_PROC_DIR=0` to use the shared registry again.
+
 ## [0.3.2]
 
 ### Changed

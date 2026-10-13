@@ -2,6 +2,9 @@ import os
 import tempfile
 from pathlib import Path
 
+from album.environments.utils.subcommand import SubProcessError
+from album.runner.album_logging import get_active_logger
+
 import yaml
 
 from album.environments.api.environment_api import IEnvironmentAPI
@@ -53,11 +56,20 @@ class _TestIntegrationCondaLock(TestCommon):
             # call
             conda_lock_path = self.env_handler.get_conda_lock_manager().conda_lock_executable()
             self.assertIsNotNone(conda_lock_path)
-            lock_file = (
-                self.env_handler.get_conda_lock_manager().create_conda_lock_file(
-                    yml_path, conda_lock_path
-                )
-            )
+            # capture album's log output: the conda-lock output is only logged, so without it a failing
+            # conda-lock call shows nothing but its exit status (e.g. in the CI job log)
+            with self.assertLogs(get_active_logger(), level="DEBUG") as captured:
+                try:
+                    lock_file = (
+                        self.env_handler.get_conda_lock_manager().create_conda_lock_file(
+                            yml_path, conda_lock_path
+                        )
+                    )
+                except SubProcessError as err:
+                    self.fail(
+                        "conda-lock failed: %s\n--- album log (last 80 lines) ---\n%s"
+                        % (err, "\n".join(captured.output[-80:]))
+                    )
 
             # assert
             self.assertTrue(lock_file.is_file())

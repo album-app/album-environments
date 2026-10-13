@@ -1,13 +1,18 @@
 import json
 import os
+import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from album.environments.initialization import PackageManagerHandler
 from album.environments.model.environment import Environment
+from album.environments.utils.subcommand import SubProcessError
 from test_album_environments.test_common import TestCommon
+
+PRIVATE_PROC_DIR_SETTING = "ENVIRONMENT_MICROMAMBA_RUN_PRIVATE_PROC_DIR"  # documented in the CHANGELOG
 
 
 class TestMicromambaManager(TestCommon):
@@ -229,6 +234,211 @@ dependencies:
             with self.assertRaises(EnvironmentError):
                 self.micromamba.run_script(environment, tmp.name)
             conda_run_mock.assert_not_called()
+
+    def _run_script_capturing_call(self, run_mock, environment_variables, platform="linux", setting=None):
+        """Call run_script with a mocked subprocess; return (args, env, registry dir existed during the call)."""
+        seen = {}
+
+        def _run(args, pipe_output, env):
+            seen["registry_existed"] = env is not None and os.path.isdir(env.get("XDG_CACHE_HOME", ""))
+
+        run_mock.side_effect = _run
+        environment = Environment(None, "aName", "aPath")
+        with patch.object(sys, "platform", platform), patch.dict(os.environ):
+            os.environ.pop(PRIVATE_PROC_DIR_SETTING, None)
+            if setting is not None:
+                os.environ[PRIVATE_PROC_DIR_SETTING] = setting
+            self.micromamba.run_script(
+                environment, "script.py", environment_variables=environment_variables, argv=["script.py", "--a=1"]
+            )
+        run_mock.assert_called_once()
+        return run_mock.call_args[0][0], run_mock.call_args[1]["env"], seen["registry_existed"]
+
+    def _expected_run_args(self, *wrapper):
+        return [
+            self.micromamba.get_install_environment_executable(), "run", "--prefix", os.path.normpath("aPath"),
+            *wrapper, "python", "-u", os.path.normpath("script.py"), "--a=1",
+        ]
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir(self, run_mock):
+        # album#227: parallel "micromamba run" calls must not share (and lock) ~/.cache/mamba/proc
+        caller_env = {"FOO": "bar"}
+
+        args, env, registry_existed = self._run_script_capturing_call(run_mock, caller_env)
+
+        # micromamba gets a private registry that exists during the run and is removed afterwards
+        self.assertTrue(registry_existed)
+        self.assertFalse(os.path.exists(env["XDG_CACHE_HOME"]))
+        # the solution's command gets the caller's (unset) XDG_CACHE_HOME back
+        self.assertEqual(self._expected_run_args("env", "-u", "XDG_CACHE_HOME"), args)
+        self.assertEqual("bar", env["FOO"])
+        self.assertEqual({"FOO": "bar"}, caller_env)  # caller's mapping is not modified
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir_keeps_caller_cache_home(self, run_mock):
+        caller_env = {"FOO": "bar", "XDG_CACHE_HOME": "/home/me/my cache"}
+
+        args, env, registry_existed = self._run_script_capturing_call(run_mock, caller_env)
+
+        self.assertTrue(registry_existed)
+        self.assertNotEqual("/home/me/my cache", env["XDG_CACHE_HOME"])
+        self.assertEqual(self._expected_run_args("env", "XDG_CACHE_HOME=/home/me/my cache"), args)
+        self.assertEqual("/home/me/my cache", caller_env["XDG_CACHE_HOME"])
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir_inherits_os_environ(self, run_mock):
+        with patch.dict(os.environ, {"ENVIRONMENT_TEST_INHERITED": "inherited"}):
+            os.environ.pop("XDG_CACHE_HOME", None)
+            args, env, registry_existed = self._run_script_capturing_call(run_mock, None)
+
+        self.assertTrue(registry_existed)
+        self.assertEqual("inherited", env["ENVIRONMENT_TEST_INHERITED"])
+        self.assertEqual(self._expected_run_args("env", "-u", "XDG_CACHE_HOME"), args)
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir_removed_on_failure(self, run_mock):
+        registries = []
+
+        def _run(args, pipe_output, env):
+            registries.append(env["XDG_CACHE_HOME"])
+            raise SubProcessError(1, "failed")
+
+        run_mock.side_effect = _run
+        environment = Environment(None, "aName", "aPath")
+        with patch.object(sys, "platform", "linux"), patch.dict(os.environ):
+            os.environ.pop(PRIVATE_PROC_DIR_SETTING, None)
+            with self.assertRaises(SubProcessError):
+                self.micromamba.run_script(environment, "script.py", environment_variables={})
+
+        self.assertEqual(1, len(registries))
+        self.assertFalse(os.path.exists(registries[0]))
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir_disabled(self, run_mock):
+        for setting in ["0", "false", "No", " off "]:
+            run_mock.reset_mock()
+            caller_env = {"FOO": "bar"}
+
+            args, env, _ = self._run_script_capturing_call(run_mock, caller_env, setting=setting)
+
+            self.assertEqual(self._expected_run_args(), args)
+            self.assertIs(caller_env, env)
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir_not_on_windows(self, run_mock):
+        caller_env = {"FOO": "bar"}
+
+        args, env, _ = self._run_script_capturing_call(run_mock, caller_env, platform="win32")
+
+        self.assertNotIn("env", args)
+        self.assertIs(caller_env, env)
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir_solution_argument_named_prefix(self, run_mock):
+        # the solution's own "--prefix" argument must not move the wrapper
+        environment = Environment(None, "aName", "aPath")
+        with patch.object(sys, "platform", "linux"), patch.dict(os.environ):
+            os.environ.pop(PRIVATE_PROC_DIR_SETTING, None)
+            self.micromamba.run_script(
+                environment, "script.py", environment_variables={}, argv=["script.py", "--prefix", "out"]
+            )
+
+        self.assertEqual(
+            [
+                self.micromamba.get_install_environment_executable(), "run", "--prefix", os.path.normpath("aPath"),
+                "env", "-u", "XDG_CACHE_HOME", "python", "-u", os.path.normpath("script.py"), "--prefix", "out",
+            ],
+            run_mock.call_args[0][0],
+        )
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_private_proc_dir_unexpected_call_layout(self, run_mock):
+        # a call that does not have the layout of _get_run_script_args is run unchanged, never wrapped at a guess
+        caller_env = {"FOO": "bar"}
+        unexpected_call = ["micromamba", "run", "-p", "aPath", "python", "script.py", "--prefix", "out"]
+        with patch.object(sys, "platform", "linux"), patch.dict(os.environ):
+            os.environ.pop(PRIVATE_PROC_DIR_SETTING, None)
+            self.micromamba._run_script_process(list(unexpected_call), caller_env, True)
+
+        run_mock.assert_called_once_with(unexpected_call, pipe_output=True, env=caller_env)
+        self.assertIs(caller_env, run_mock.call_args[1]["env"])
+        self.assertIn("Unexpected micromamba call", self.captured_output.getvalue())
+
+    @staticmethod
+    def _make_private_proc_dir(parent, name, proc_files=None, modified_seconds_ago=0):
+        """Create <parent>/<name>, with mamba/proc/<proc_files> unless proc_files is None, and set its mtimes."""
+        path = parent.joinpath(name)
+        directories = [path]
+        if proc_files is None:
+            path.mkdir()
+        else:
+            proc_dir = path.joinpath("mamba", "proc")
+            proc_dir.mkdir(parents=True)
+            for file_name in proc_files:
+                proc_dir.joinpath(file_name).touch()
+            directories = [proc_dir, proc_dir.parent, path]
+        modified = time.time() - modified_seconds_ago
+        for directory in directories:
+            os.utime(directory, (modified, modified))
+        return path
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_removes_leftover_private_proc_dirs(self, run_mock):
+        # interrupted runs (Ctrl-C, SIGTERM, SIGKILL) leave their private registry behind; the next run removes it
+        tmp_dir = Path(self.test_base_dir.name).joinpath("tmp")
+        tmp_dir.mkdir()
+        two_hours = 2 * 3600
+        interrupted = self._make_private_proc_dir(
+            tmp_dir, "album-micromamba-run-interrupted", ["proc.lock"], two_hours
+        )
+        never_started = self._make_private_proc_dir(tmp_dir, "album-micromamba-run-never-started", None, two_hours)
+        running = self._make_private_proc_dir(
+            tmp_dir, "album-micromamba-run-running", ["proc.lock", "4242.json"], two_hours
+        )
+        recent = self._make_private_proc_dir(tmp_dir, "album-micromamba-run-recent", ["proc.lock"], 60)
+        just_finished = self._make_private_proc_dir(
+            tmp_dir, "album-micromamba-run-just-finished", ["proc.lock"], two_hours
+        )
+        os.utime(just_finished.joinpath("mamba", "proc"))  # its <pid>.json was deleted a moment ago
+        other_name = self._make_private_proc_dir(tmp_dir, "other-run", ["proc.lock"], two_hours)
+        not_a_dir = tmp_dir.joinpath("album-micromamba-run-file")
+        not_a_dir.touch()
+        os.utime(not_a_dir, (time.time() - two_hours, time.time() - two_hours))
+
+        with patch.object(tempfile, "tempdir", str(tmp_dir)):
+            _, env, registry_existed = self._run_script_capturing_call(run_mock, {})
+
+        self.assertTrue(registry_existed)
+        self.assertEqual(tmp_dir, Path(env["XDG_CACHE_HOME"]).parent)
+        self.assertEqual(
+            sorted(path.name for path in [running, recent, just_finished, other_name, not_a_dir]),
+            sorted(os.listdir(tmp_dir)),
+        )
+        self.assertFalse(interrupted.exists())
+        self.assertFalse(never_started.exists())
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_run_script_keeps_private_proc_dirs_of_other_users(self, run_mock):
+        tmp_dir = Path(self.test_base_dir.name).joinpath("tmp")
+        tmp_dir.mkdir()
+        leftover = self._make_private_proc_dir(tmp_dir, "album-micromamba-run-leftover", ["proc.lock"], 2 * 3600)
+        real_stat = os.stat
+
+        def _stat_own_registry_as_other_user(path, *args, **kwargs):
+            result = real_stat(path, *args, **kwargs)
+            if Path(path).parent == tmp_dir and Path(path) != leftover:
+                values = list(result)
+                values[4] += 1  # st_uid
+                return os.stat_result(values)
+            return result
+
+        with patch.object(tempfile, "tempdir", str(tmp_dir)), patch.object(
+            os, "stat", _stat_own_registry_as_other_user
+        ):
+            self._run_script_capturing_call(run_mock, {})
+
+        self.assertEqual([leftover.name], os.listdir(tmp_dir))
 
     def test_create_or_update_env_no_env(self):
         update_mock = MagicMock()

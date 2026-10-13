@@ -1,9 +1,13 @@
 import os
+import sys
+import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from album.environments.api.environment_api import IEnvironmentAPI
 from album.environments.environment_api import EnvironmentAPI
 from album.environments.initialization import PackageManagerHandler
+from album.environments.model.environment import Environment
 from test_album_environments.integration.environments.test_integration_conda_lock_base import (
     _TestIntegrationCondaLock,
 )
@@ -54,3 +58,30 @@ class TestIntegrationCondaLockMicromamba(_TestIntegrationCondaLock):
 
     def test_run_script(self):
         super().run_script()
+
+    @unittest.skipIf(
+        sys.platform in ("win32", "cygwin"), "micromamba does not lock its process registry on Windows"
+    )
+    def test_run_script_private_proc_dir(self):
+        # album#227: "micromamba run" must not use the shared, locked process registry
+        # <XDG_CACHE_HOME>/mamba/proc, while the solution still sees the caller's XDG_CACHE_HOME
+        package_manager = self.env_handler.get_package_manager()
+        package_manager.create_environment(str(self.test_environment_path))
+        user_cache = Path(self.test_base_dir.name).joinpath("user_cache")
+        script_path = Path(self.test_base_dir.name).joinpath("print_cache_home.py")
+        script_path.write_text("import os; print('cache_home=%s' % os.environ.get('XDG_CACHE_HOME'))")
+        environment = Environment(None, self.test_environment_name, self.test_environment_path)
+
+        with patch.dict(os.environ):
+            os.environ.pop("ENVIRONMENT_MICROMAMBA_RUN_PRIVATE_PROC_DIR", None)
+            caller_env = os.environ.copy()
+            caller_env["XDG_CACHE_HOME"] = str(user_cache)
+            package_manager.run_script(environment, str(script_path), environment_variables=caller_env)
+
+            self.assertIn("cache_home=%s" % user_cache, self.captured_output.getvalue())
+            self.assertFalse(user_cache.joinpath("mamba", "proc").exists())
+
+            del caller_env["XDG_CACHE_HOME"]
+            package_manager.run_script(environment, str(script_path), environment_variables=caller_env)
+
+            self.assertIn("cache_home=None", self.captured_output.getvalue())

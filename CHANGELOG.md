@@ -16,8 +16,11 @@ We use the following:
 
 ## [unreleased]
 
+## [0.3.4]
+
 ### Changed
 
+- Python 3.14 is listed among the supported Python versions; the CI tests it
 - CI: the jobs create their environment with `zstandard` from conda-forge. `zstandard`, which conda-lock needs, has no
   wheels for Python 3.15 on PyPI yet, and the runners have no compiler to build it, so pip failed on 3.15.
   PyYAML, which has no 3.15 wheels either, is built without libyaml (`PYYAML_FORCE_LIBYAML=0`): on Windows its
@@ -35,6 +38,14 @@ We use the following:
   activate ...") at DEBUG instead of INFO: album runs solutions in their environments itself, so a user who follows
   the hint does something they do not need to (album#151). All other output stays at INFO. `subcommand.run()` has
   a new keyword argument `debug_from` for this.
+
+## [0.3.3]
+
+### Changed
+
+- when no micromamba is installed, album-environments downloads micromamba 2.5.0 instead of 1.5.6
+- CI: the micromamba download installs CA certificates and retries; testing against the dev version of
+  album-solution-api; coverage calculation
 
 ## [0.3.2]
 
@@ -55,7 +66,9 @@ We use the following:
 - reconstruct changelog
 - changelog to the repository
 
-[unreleased]: https://gitlab.com/album-app/album-environments/-/compare/v0.3.2...HEAD
+[unreleased]: https://gitlab.com/album-app/album-environments/-/compare/v0.3.4...HEAD
+[0.3.4]: https://gitlab.com/album-app/album-environments/-/compare/v0.3.3...v0.3.4
+[0.3.3]: https://gitlab.com/album-app/album-environments/-/compare/v0.3.2...v0.3.3
 [0.3.2]: https://gitlab.com/album-app/album-environments/-/compare/v0.3.1...v0.3.2
 [0.3.1]: https://gitlab.com/album-app/album-environments/-/compare/v0.3.0...v0.3.1
 [0.3.0]: https://gitlab.com/album-app/album-environments/-/compare/v0.2.2...v0.3.0

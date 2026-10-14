@@ -18,6 +18,10 @@ We use the following:
 
 ### Changed
 
+- CI: the jobs create their environment with `zstandard` from conda-forge. `zstandard`, which conda-lock needs, has no
+  wheels for Python 3.15 on PyPI yet, and the runners have no compiler to build it, so pip failed on 3.15.
+  PyYAML, which has no 3.15 wheels either, is built without libyaml (`PYYAML_FORCE_LIBYAML=0`): on Windows its
+  build failed without a compiler instead of falling back to pure Python.
 - pre-commit is no longer installed with album-environments, only its developers need it: it is in the dependency
   group `dev` (`pip install --group dev`, pip >= 25.1)
 

@@ -31,6 +31,10 @@ We use the following:
   `~/.cache/mamba/proc` ("Cannot lock ... Waiting for other mamba process to finish") and no longer fail
   occasionally while reading it: every `micromamba run` gets a private, temporary registry (album#227).
   Set `ENVIRONMENT_MICROMAMBA_RUN_PRIVATE_PROC_DIR=0` to use the shared registry again.
+- creating an environment logs the hint how to activate it ("To activate this environment, use: micromamba
+  activate ...") at DEBUG instead of INFO: album runs solutions in their environments itself, so a user who follows
+  the hint does something they do not need to (album#151). All other output stays at INFO. `subcommand.run()` has
+  a new keyword argument `debug_from` for this.
 
 ## [0.3.2]
 

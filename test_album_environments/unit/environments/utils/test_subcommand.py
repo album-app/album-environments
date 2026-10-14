@@ -12,9 +12,9 @@ from album.environments.utils import subcommand
 from album.environments.utils.subcommand import LogfileBuffer, SubProcessError
 from album.runner import album_logging
 from album.runner.album_logging import (
-    pop_active_logger,
     get_active_logger,
     get_active_logger_in_thread,
+    pop_active_logger,
     push_active_logger,
 )
 
@@ -108,6 +108,32 @@ class TestSubcommand(unittest.TestCase):
                 cm.output[0].endswith("Running command: python %s..." % path)
             )
             self.assertTrue(cm.output[1].endswith("this should not happen"))
+
+    def test_run_debug_from(self):
+        """Plain lines from the first line debug_from matches on are logged at DEBUG."""
+        fd, path = tempfile.mkstemp(suffix=".py")
+        try:
+            with os.fdopen(fd, "w") as tmp:
+                tmp.write(
+                    "print('Transaction finished')\n"
+                    "print('To activate this environment, use:')\n"
+                    "print('    micromamba activate /some/env')\n"
+                    "print('WARNING: a warning after the hint')\n"
+                )
+            with self.assertLogs(self.logger, level="DEBUG") as cm:
+                subcommand.run(
+                    [sys.executable, path],
+                    debug_from=lambda line: line.startswith("To activate"),
+                )
+        finally:
+            os.remove(path)
+
+        levels = {r.getMessage().strip(): r.levelname for r in cm.records}
+        self.assertEqual("INFO", levels["Transaction finished"])
+        self.assertEqual("DEBUG", levels["To activate this environment, use:"])
+        self.assertEqual("DEBUG", levels["micromamba activate /some/env"])
+        # a line in a log format keeps its level
+        self.assertEqual("WARNING", levels["a warning after the hint"])
 
     @unittest.skip("Fixme!")
     def test_run_logging_from_thread(self):

@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from album.environments.controller.package_manager import _is_activation_hint
 from album.environments.initialization import PackageManagerHandler
 from album.environments.model.environment import Environment
 from album.environments.utils.subcommand import SubProcessError
@@ -166,6 +167,15 @@ dependencies:
             )
         else:
             unittest.skip("WARNING - MICROMAMBA ERROR!")
+
+    @patch("album.environments.utils.subcommand.run")
+    def test_create_environment_activation_hint_at_debug(self, run_mock):
+        self.micromamba.create_environment(self.test_environment_path)
+
+        # the output of creating the environment is logged, the activation hint at DEBUG
+        run_mock.assert_called_once()
+        self.assertTrue(run_mock.call_args.kwargs["log_output"])
+        self.assertIs(_is_activation_hint, run_mock.call_args.kwargs["debug_from"])
 
     @unittest.skip("Tested in tear_down() routine!")
     def test_remove_environment(self, active_env_mock):
@@ -529,3 +539,21 @@ dependencies:
             ]"""
         )
         self.assertEqual("3.9.5", self.micromamba.get_package_version(Path("aPath"), "python"))
+
+
+class TestActivationHint(unittest.TestCase):
+    def test_is_activation_hint(self):
+        # the first line of the hint of micromamba 1.x and 2.x, and of conda and mamba 1.x
+        for line in [
+            "To activate this environment, use:",
+            "To activate this environment, use",
+            "# To activate this environment, use",
+        ]:
+            self.assertTrue(_is_activation_hint(line), line)
+        for line in [
+            "Transaction finished",
+            "  + python  3.10.14  h955ad1f_0_cpython  conda-forge  Cached",
+            "#",
+            "    micromamba activate /path/to/env",
+        ]:
+            self.assertFalse(_is_activation_hint(line), line)

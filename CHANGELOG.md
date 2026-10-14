@@ -30,6 +30,9 @@ We use the following:
 
 ### Fixed
 
+- the automatic micromamba download on Linux ARM64 and POWER: `uname -m` reports `aarch64` and `ppc64le` there, but
+  only `arm64` and `power` were recognized, so album stopped with "There is no micromamba version for your processor
+  architecture."
 - parallel solution runs no longer wait for each other on micromamba's shared process registry
   `~/.cache/mamba/proc` ("Cannot lock ... Waiting for other mamba process to finish") and no longer fail
   occasionally while reading it: every `micromamba run` gets a private, temporary registry (album#227).

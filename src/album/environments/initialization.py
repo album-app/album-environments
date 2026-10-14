@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Optional
 
 import pooch
-from album.runner.album_logging import get_active_logger
 
 from album.environments.api.controller.conda_lock_manager import ICondaLockManager
 from album.environments.api.controller.package_manager import IPackageManager
@@ -21,6 +20,7 @@ from album.environments.controller.micromamba_manager import MicromambaManager
 from album.environments.environment_api import EnvironmentAPI
 from album.environments.model.environment_default_values import EnvironmentDefaultValues
 from album.environments.utils.subcommand import SubProcessError
+from album.runner.album_logging import get_active_logger
 
 
 class PackageManagerHandler:
@@ -275,7 +275,9 @@ class PackageManagerHandler:
     @staticmethod
     def _download_mamba_linux(mamba_download_file: Path) -> Path:
         """Download micromamba for linux depending on the processor architecture."""
-        if PackageManagerHandler.check_architecture().__eq__("x86_64"):
+        # Linux reports aarch64 and ppc64le ("uname -m"), arm64 and power are kept for compatibility
+        architecture = PackageManagerHandler.check_architecture().lower()
+        if architecture == "x86_64":
             return Path(
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_X86_64.value,
@@ -285,7 +287,7 @@ class PackageManagerHandler:
                     progressbar=False,
                 )
             )
-        elif PackageManagerHandler.check_architecture().lower().__eq__("arm64"):
+        elif architecture in ("aarch64", "arm64"):
             return Path(
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_ARM64.value,
@@ -295,7 +297,7 @@ class PackageManagerHandler:
                     progressbar=False,
                 )
             )
-        elif PackageManagerHandler.check_architecture().lower().__eq__("power"):
+        elif architecture in ("ppc64le", "power"):
             return Path(
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_POWER.value,

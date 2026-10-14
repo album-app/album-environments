@@ -1,5 +1,10 @@
 # CI Routine for the album-environments package.
 
+variables:
+  # PyYAML has no wheels for Python 3.15 yet, and without a compiler its build only falls back to pure Python on
+  # Linux and macOS: on Windows, setuptools raises a PlatformError PyYAML does not catch. Build it without libyaml.
+  PYYAML_FORCE_LIBYAML: "0"
+
 #----------------------------
 # templates
 #----------------------------
@@ -28,7 +33,8 @@
     - "& $7ZIP_EXE x micromamba.tar.bz2 -aoa"
     - '& $7ZIP_EXE x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe $("-o" + $Env:MAMBA_ROOT_PREFIX)'
     - "$progressPreference = $oldProgressPreference"
-    - '.\micromamba_installation\Library\bin\micromamba.exe create -y -n album -c conda-forge python=$env:TEST_PYTHON_VERSION'
+    # zstandard (a dependency of conda-lock) has no wheels for Python 3.15 on PyPI yet, and the runners have no compiler to build it
+    - '.\micromamba_installation\Library\bin\micromamba.exe create -y -n album -c conda-forge python=$env:TEST_PYTHON_VERSION zstandard'
     - '.\micromamba_installation\Library\bin\micromamba.exe --version'
     - 'Write-Output "CI_COMMIT_REF_NAME: $env:CI_COMMIT_REF_NAME"'
     - 'Write-Output "ALBUM_DEV_ENVIRONMENTS: $env:ALBUM_DEV_ENVIRONMENTS"'
@@ -66,7 +72,8 @@
     - curl -fsSL --retry 5 --retry-delay 3 https://micro.mamba.pm/api/micromamba/linux-64/$MICROMAMBA_CI_VERSION -o /tmp/micromamba.tar.bz2
     - tar -xvjf /tmp/micromamba.tar.bz2 -C $CI_PROJECT_DIR/bin/ --strip-components=1 bin/micromamba
     - eval "$($CI_PROJECT_DIR/bin/micromamba shell hook -s posix)"
-    - micromamba create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION
+    # zstandard (a dependency of conda-lock) has no wheels for Python 3.15 on PyPI yet, and the runners have no compiler to build it
+    - micromamba create -y -n album -c conda-forge python=$TEST_PYTHON_VERSION zstandard
     - micromamba activate album
     - micromamba --version
     - echo "CI_COMMIT_REF_NAME:$CI_COMMIT_REF_NAME"
@@ -110,7 +117,8 @@
     - curl -fsSL --retry 5 --retry-delay 3 https://micro.mamba.pm/api/micromamba/osx-64/$MICROMAMBA_CI_VERSION -o $tmpdir/micromamba.tar.bz2
     - tar -xvjf $tmpdir/micromamba.tar.bz2 -C $tmpdir/bin/ --strip-components=1 bin/micromamba
     - eval "$($tmpdir/bin/micromamba shell hook -s posix)"
-    - micromamba create -y -n album python=$TEST_PYTHON_VERSION -c conda-forge
+    # zstandard (a dependency of conda-lock) has no wheels for Python 3.15 on PyPI yet, and the runners have no compiler to build it
+    - micromamba create -y -n album python=$TEST_PYTHON_VERSION zstandard -c conda-forge
     - micromamba activate album
     - micromamba --version
     - echo "CI_COMMIT_REF_NAME:$CI_COMMIT_REF_NAME"

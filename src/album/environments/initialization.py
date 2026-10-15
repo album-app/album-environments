@@ -1,8 +1,8 @@
 """Initializes the environmentAPI object."""
 import os
-import platform
 import shutil
 import subprocess
+import sys
 import tarfile
 import zipfile
 from pathlib import Path
@@ -212,15 +212,15 @@ class PackageManagerHandler:
     @staticmethod
     def _download_mamba(mamba_base_path: Path) -> Path:
         """Download micromamba."""
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             return PackageManagerHandler._download_mamba_win(
                 mamba_base_path.joinpath("micromamba.zip")
             )
-        elif platform.system() == "Darwin":
+        elif sys.platform == "darwin":
             return PackageManagerHandler._download_mamba_macos(
                 mamba_base_path.joinpath("micromamba.tar")
             )
-        elif platform.system() == "Linux":
+        elif sys.platform == "linux":
             return PackageManagerHandler._download_mamba_linux(
                 mamba_base_path.joinpath("micromamba.tar")
             )
@@ -348,7 +348,7 @@ class PackageManagerHandler:
     @staticmethod
     def get_mamba_exe(mamba_base_path: Path) -> str:
         """Return the path to the micromamba executable."""
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             return str(
                 Path(mamba_base_path)
                 .joinpath("Library", "bin", "micromamba.exe")
@@ -361,7 +361,7 @@ class PackageManagerHandler:
     @staticmethod
     def get_conda_lock_exe(default_prefix: Path) -> str:
         """Return the path to the micromamba executable."""
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             return str(
                 Path(default_prefix).joinpath("Scripts", "conda-lock.exe").resolve()
             )
@@ -380,7 +380,7 @@ class PackageManagerHandler:
             install_base_path_.mkdir()
 
         installer = PackageManagerHandler._download_mamba(install_base_path_)
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             PackageManagerHandler._unpack_mamba_win(installer, install_base_path_)
         else:
             PackageManagerHandler._unpack_mamba_unix(installer, install_base_path_)

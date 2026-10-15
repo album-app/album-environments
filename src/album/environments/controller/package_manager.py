@@ -1,7 +1,7 @@
 """Implementation of the PackageManager class."""
 import json
 import os
-import platform
+import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
@@ -357,10 +357,7 @@ class PackageManager(IPackageManager):
 
     @staticmethod
     def _get_pip_exe(environment_path: str) -> str:
-        p = (
-            platform.system()
-        )  # Returns system/OS name: 'Linux', 'Darwin', 'Java', 'Windows'. Empty if the value cannot be determined.
-        if p == "Windows":
+        if sys.platform == "win32":
             # NOTE: WHEN USING 'CONDA RUN' THE CORRECT ENVIRONMENT GETS TEMPORARY ACTIVATED,
             # BUT THE PATH POINTS TO THE WRONG PYTHON (conda base folder python) BECAUSE THE CONDA BASE PATH
             # COMES FIRST IN ENVIRONMENT VARIABLE "%PATH%". THUS, FULL PATH IS NECESSARY TO CALL
@@ -368,11 +365,11 @@ class PackageManager(IPackageManager):
             return os.path.normpath(
                 Path(environment_path).joinpath("Scripts", "pip.exe")
             )
-        elif p == "Darwin" or p == "Linux":
+        elif sys.platform == "darwin" or sys.platform == "linux":
             return os.path.normpath(Path(environment_path).joinpath("bin", "pip"))
         else:
             get_active_logger().warning(
-                "Unsupported platform: %s! Trying linux based pathing." % p
+                "Unsupported platform: %s! Trying linux based pathing." % sys.platform
             )
             return os.path.normpath(Path(environment_path).joinpath("bin", "pip"))
 

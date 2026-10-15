@@ -27,6 +27,9 @@ We use the following:
   build failed without a compiler instead of falling back to pure Python.
 - pre-commit is no longer installed with album-environments, only its developers need it: it is in the dependency
   group `dev` (`pip install --group dev`, pip >= 25.1)
+- the operating system is checked the same way everywhere, with `sys.platform` (`sys.platform == "win32"` for
+  Windows), instead of `platform.system()` in some places and `sys.platform` in others (album#241). Nothing changes
+  for users.
 
 ### Fixed
 

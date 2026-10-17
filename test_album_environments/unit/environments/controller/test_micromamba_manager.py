@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from album.environments.controller.conda_manager import CondaManager
 from album.environments.controller.package_manager import _is_activation_hint
 from album.environments.initialization import PackageManagerHandler
 from album.environments.model.environment import Environment
@@ -343,6 +344,17 @@ dependencies:
 
         self.assertNotIn("env", args)
         self.assertIs(caller_env, env)
+
+    def test_get_run_script_args_unbuffered_on_windows(self):
+        # with -u the prints of a solution arrive while it runs, not only when it ends (album#217);
+        # the tests of conda_manager need conda, so its call is checked here as well
+        conda = CondaManager("conda", Path("base"))
+        python = os.path.normpath(Path("aPath").joinpath("python"))
+        for manager in (self.micromamba, conda):
+            with patch.object(sys, "platform", "win32"):
+                args = manager._get_run_script_args("aPath", "script.py")
+
+            self.assertEqual([python, "-u", os.path.normpath("script.py")], args[-3:])
 
     @patch("album.environments.utils.subcommand.run")
     def test_run_script_private_proc_dir_solution_argument_named_prefix(self, run_mock):

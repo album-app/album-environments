@@ -16,19 +16,6 @@ We use the following:
 
 ## [unreleased]
 
-### Fixed
-
-- a progress bar of a solution, such as one of tqdm, became a log line for every update (album#217). A line the
-  process redraws with a lone `\r` is now logged as a progress update: at most ten times per second (as often as
-  tqdm redraws its bar), a blank one not at all, and with the attribute `album_progress` on its log record, so that
-  album redraws it in place on a terminal and logs it once per 30 seconds elsewhere. If the output ends in a
-  redrawn line, such as one printed with `end="\r"`, its last update is logged as a line.
-- output of a process that is not valid in the file system encoding no longer stops the run with a
-  `UnicodeDecodeError`: the invalid bytes are logged as `�`
-- on Windows, what a solution prints reached the log only when Python's output buffer was full or the solution ended,
-  e.g. every print inside a tqdm loop came after the loop (album#217). The solution's Python now runs with `-u`
-  there as well, as on Linux and macOS.
-
 ## [0.3.4]
 
 ### Changed
@@ -57,6 +44,16 @@ We use the following:
   activate ...") at DEBUG instead of INFO: album runs solutions in their environments itself, so a user who follows
   the hint does something they do not need to (album#151). All other output stays at INFO. `subcommand.run()` has
   a new keyword argument `debug_from` for this.
+- a progress bar of a solution, such as one of tqdm, became a log line for every update (album#217). A line the
+  process redraws with a lone `\r` is now logged as a progress update: at most ten times per second (as often as
+  tqdm redraws its bar), a blank one not at all, and with the attribute `album_progress` on its log record, so that
+  album redraws it in place on a terminal and logs it once per 30 seconds elsewhere. If the output ends in a
+  redrawn line, such as one printed with `end="\r"`, its last update is logged as a line.
+- output of a process that is not valid in the file system encoding no longer stops the run with a
+  `UnicodeDecodeError`: the invalid bytes are logged as `�`
+- on Windows, what a solution prints reached the log only when Python's output buffer was full or the solution ended,
+  e.g. every print inside a tqdm loop came after the loop (album#217). The solution's Python now runs with `-u`
+  there as well, as on Linux and macOS.
 
 ## [0.3.3]
 

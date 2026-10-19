@@ -43,7 +43,7 @@ dependencies = [
     "requests>=2.25.1",
     "jsonschema>=4.0.0",
     "conda-lock>=1.4.0",
-    "album-solution-api>=0.7.0,<0.8.0",
+    "album-solution-api>=0.7.3,<0.8.0",
     "pooch>=1.8.1",
 ]
 

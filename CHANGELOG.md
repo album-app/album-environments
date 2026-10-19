@@ -30,6 +30,7 @@ We use the following:
 - the operating system is checked the same way everywhere, with `sys.platform` (`sys.platform == "win32"` for
   Windows), instead of `platform.system()` in some places and `sys.platform` in others (album#241). Nothing changes
   for users.
+- album-solution-api 0.7.3 or newer is required (was 0.7.0), the version released together with album 1.0.0
 
 ### Fixed
 

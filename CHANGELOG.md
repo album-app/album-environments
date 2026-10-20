@@ -31,6 +31,8 @@ We use the following:
   Windows), instead of `platform.system()` in some places and `sys.platform` in others (album#241). Nothing changes
   for users.
 - album-solution-api 0.7.3 or newer is required (was 0.7.0), the version released together with album 1.0.0
+- CI: `prepare release` stops with a message while `ALBUM_DEV_ENVIRONMENTS` is on: the tests then ran
+  against album-solution-api from its dev branch, so nothing is published
 
 ### Fixed
 

@@ -157,6 +157,8 @@ prepare release:
   tags:
     - docker
   script:
+    # The release process switches ALBUM_DEV_ENVIRONMENTS off before this package is released (see the wiki).
+    - if [ "$ALBUM_DEV_ENVIRONMENTS" = "True" ]; then echo "Not released. ALBUM_DEV_ENVIRONMENTS is True, so the tests ran against album-solution-api from its dev branch. Switch the group variable off and run a new pipeline on main."; exit 1; fi
     - echo "preparing release"
     - VERSION=$(cat pyproject.toml | grep "version=*" | awk '{gsub(/"/, "", $3); print $3}')
     - TAG=v$VERSION

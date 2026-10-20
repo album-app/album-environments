@@ -46,6 +46,13 @@ class EnvironmentDefaultValues(Enum):
         "micromamba"  # base folder prefix where micromamba is installed into
     )
 
+    # Name of the environment variable that controls whether every "micromamba run" of a solution gets a private,
+    # temporary process registry instead of the shared ~/.cache/mamba/proc (default: yes). Parallel runs otherwise
+    # wait for each other's lock on that registry. Set the variable to 0/false/no/off for the shared registry.
+    micromamba_run_private_proc_dir_env_name = (
+        "ENVIRONMENT_MICROMAMBA_RUN_PRIVATE_PROC_DIR"
+    )
+
     # ### Debugging Options ###
     # micromamba
     micromamba_path = os.getenv("ENVIRONMENT_DEBUGGING_MICROMAMBA_PATH")

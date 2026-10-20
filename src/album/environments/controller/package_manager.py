@@ -1,13 +1,12 @@
 """Implementation of the PackageManager class."""
 import json
 import os
-import platform
+import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Union
 
 import yaml
-from album.runner.album_logging import get_active_logger
 
 from album.environments.api.controller.package_manager import IPackageManager
 from album.environments.api.model.environment import IEnvironment
@@ -15,6 +14,18 @@ from album.environments.model.environment_default_values import EnvironmentDefau
 from album.environments.utils import subcommand
 from album.environments.utils.file_operations import force_remove
 from album.environments.utils.subcommand import SubProcessError
+from album.runner.album_logging import get_active_logger
+
+
+def _is_activation_hint(line: str) -> bool:
+    """Tell whether a line of the output of creating an environment starts the activation hint.
+
+    micromamba, mamba and conda end that output with how to activate the new environment,
+    e.g. "To activate this environment, use: micromamba activate <path>" (conda: "# To
+    activate this environment, use"). album runs solutions in their environments itself,
+    so a user who follows the hint does something they do not need to (album#151).
+    """
+    return line.lstrip("# ").startswith("To activate this environment")
 
 
 class PackageManager(IPackageManager):
@@ -165,7 +176,10 @@ class PackageManager(IPackageManager):
             env_file.write(yaml.safe_dump(environment_content))
         subprocess_args = self._get_env_create_args(env_file, env_prefix)
         try:
-            subcommand.run(subprocess_args, log_output=True)
+            # the hint how to activate the environment is only logged at DEBUG
+            subcommand.run(
+                subprocess_args, log_output=True, debug_from=_is_activation_hint
+            )
         except RuntimeError as e:
             # cleanup after failed installation
             if self.environment_exists(environment_path):
@@ -197,6 +211,18 @@ class PackageManager(IPackageManager):
         subprocess_args = self._get_run_script_args(environment.path(), script)  # type: ignore
         if argv and len(argv) > 1:
             subprocess_args.extend(argv[1:])
+        self._run_script_process(subprocess_args, environment_variables, pipe_output)
+
+    def _run_script_process(
+        self,
+        subprocess_args: List[str],
+        environment_variables: Union[
+            Mapping,
+            None,
+        ],
+        pipe_output: bool,
+    ) -> None:
+        """Start the process assembled by run_script. Package managers can override this to adapt the call."""
         subcommand.run(
             subprocess_args, pipe_output=pipe_output, env=environment_variables
         )
@@ -331,10 +357,7 @@ class PackageManager(IPackageManager):
 
     @staticmethod
     def _get_pip_exe(environment_path: str) -> str:
-        p = (
-            platform.system()
-        )  # Returns system/OS name: 'Linux', 'Darwin', 'Java', 'Windows'. Empty if the value cannot be determined.
-        if p == "Windows":
+        if sys.platform == "win32":
             # NOTE: WHEN USING 'CONDA RUN' THE CORRECT ENVIRONMENT GETS TEMPORARY ACTIVATED,
             # BUT THE PATH POINTS TO THE WRONG PYTHON (conda base folder python) BECAUSE THE CONDA BASE PATH
             # COMES FIRST IN ENVIRONMENT VARIABLE "%PATH%". THUS, FULL PATH IS NECESSARY TO CALL
@@ -342,11 +365,11 @@ class PackageManager(IPackageManager):
             return os.path.normpath(
                 Path(environment_path).joinpath("Scripts", "pip.exe")
             )
-        elif p == "Darwin" or p == "Linux":
+        elif sys.platform == "darwin" or sys.platform == "linux":
             return os.path.normpath(Path(environment_path).joinpath("bin", "pip"))
         else:
             get_active_logger().warning(
-                "Unsupported platform: %s! Trying linux based pathing." % p
+                "Unsupported platform: %s! Trying linux based pathing." % sys.platform
             )
             return os.path.normpath(Path(environment_path).joinpath("bin", "pip"))
 

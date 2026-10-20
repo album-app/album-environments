@@ -3,13 +3,19 @@ import io
 import re
 import subprocess
 import sys
+import time
 from logging import Logger
-from typing import List, Mapping, Optional, Union
+from typing import Callable, List, Mapping, Optional, Union, cast
 
 from album.runner import album_logging
 from album.runner.album_logging import LogEntry, LogLevel
 
 module_logger = album_logging.get_active_logger
+
+# A process redraws a line by ending it with a lone "\r", like the progress bars of tqdm.
+# Such progress updates are logged at most once per PROGRESS_INTERVAL seconds, as often as
+# tqdm redraws its bar by default.
+PROGRESS_INTERVAL = 0.1
 
 
 class LogfileBuffer(io.StringIO):
@@ -20,10 +26,19 @@ class LogfileBuffer(io.StringIO):
         module_logger: Logger,
         message_formatter: Union[str, None] = "%(message)s",
         error_logger: bool = False,
+        debug_from: Optional[Callable[[str], bool]] = None,
     ):
-        """Initialize the LogfileBuffer."""
+        """Initialize the LogfileBuffer.
+
+        Args:
+            debug_from:
+                Plain lines (lines not in a log format) are logged at INFO. From the first
+                line this predicate matches on, they are logged at DEBUG instead.
+        """
         super().__init__()
         self.message_formatter = message_formatter
+        self.debug_from = debug_from
+        self.debug_rest = False
         self.leftover_message = None
         self.last_log = None
         self.is_error_logger = error_logger
@@ -32,12 +47,27 @@ class LogfileBuffer(io.StringIO):
         self.logger_name_script = self.logger_name + ".script"
         self.logger_name_current = self.logger_name_script
         self.logger_name_unnamed = self.logger_name_script + ".log"
+        self.last_progress = float("-inf")
+        self.redrawn = ""  # the last update of the line the process redraws
 
     def write(self, input_str: str) -> int:
-        """Write to the buffer."""
+        """Write to the buffer.
+
+        Text that ends in a lone carriage return is a progress update: the process redraws
+        the line, like the progress bars of tqdm do. Blank progress updates are dropped, the
+        others are logged at most once per PROGRESS_INTERVAL seconds, at INFO and with the
+        attribute album_progress on their log record. If the output ends in a redrawn line,
+        close() logs its last update as a line.
+        """
         if not isinstance(input_str, str):
             input_str = str(input_str, "utf-8")
+        if input_str.endswith("\r"):
+            self._log_progress(input_str.rstrip())
+            return 1
+        self.redrawn = ""  # a line break ends the redrawn line
         m = input_str.rstrip()
+        if self.debug_from is not None and not self.debug_rest:
+            self.debug_rest = self.debug_from(m)
 
         log_entry = self.parse_log(m)
 
@@ -66,11 +96,32 @@ class LogfileBuffer(io.StringIO):
             self.logger.name = self.logger_name_current
             if self.is_error_logger:
                 self._log("ERROR", m)
+            elif self.debug_rest:
+                self._log("DEBUG", m)
             else:
                 self._log("INFO", m)
         self.logger.name = self.logger_name
         #
         return 1
+
+    def close(self) -> None:
+        """Close the buffer, the last update of a redrawn line the output ended in is logged."""
+        if self.redrawn:
+            self.logger.name = self.logger_name_current
+            self.logger.info(self.redrawn)
+            self.logger.name = self.logger_name
+            self.redrawn = ""
+        super().close()
+
+    def _log_progress(self, text: str) -> None:
+        self.redrawn = text
+        now = time.monotonic()
+        if not text or now - self.last_progress < PROGRESS_INTERVAL:
+            return
+        self.last_progress = now
+        self.logger.name = self.logger_name_current
+        self.logger.info(text, extra={"album_progress": True})
+        self.logger.name = self.logger_name
 
     def _log(self, current_level: LogLevel, message: str) -> None:
         if LogLevel.INFO.name == current_level:
@@ -158,10 +209,13 @@ class LogProcessing:
         logger: Logger,
         log_output: bool,
         message_formatter: Union[str, None] = None,
+        debug_from: Optional[Callable[[str], bool]] = None,
     ):
         """Initialize the LogProcessing."""
         if log_output:
-            self.info_logger = LogfileBuffer(logger, message_formatter)
+            self.info_logger = LogfileBuffer(
+                logger, message_formatter, debug_from=debug_from
+            )
             self.error_logger = LogfileBuffer(
                 logger, message_formatter, error_logger=True
             )
@@ -192,6 +246,7 @@ def run(
         Mapping,
         None,
     ] = None,
+    debug_from: Optional[Callable[[str], bool]] = None,
 ) -> Union[int, subprocess.CompletedProcess]:
     """Run a command in a subprocess thereby logging its output.
 
@@ -206,6 +261,10 @@ def run(
             Indicates whether to pipe the output of the subprocess or just return it as is.
         env:
             The environment variables of the process.
+        debug_from:
+            A predicate on the lines of the output. Plain lines (lines not in a log format)
+            are logged at INFO. From the first line the predicate matches on, they are
+            logged at DEBUG instead. Lines in a log format keep their level.
 
     Returns:
         Exit status of the subprocess.
@@ -218,7 +277,7 @@ def run(
     module_logger().debug("Running command: %s..." % " ".join(command))
 
     logger = album_logging.get_active_logger()
-    log_processing = LogProcessing(logger, log_output, message_formatter)
+    log_processing = LogProcessing(logger, log_output, message_formatter, debug_from)
 
     exit_status = _run_process(command, log_processing, pipe_output, env)
 
@@ -252,14 +311,18 @@ def _run_process(
             env=env,
             text=True,
             encoding=sys.getfilesystemencoding(),
+            errors="replace",
         )
+        # keep a lone "\r": text=True alone turns it into a line break, so every redraw of a
+        # progress bar became a line of its own (album#217)
+        cast(io.TextIOWrapper, process.stdout).reconfigure(newline="")
         try:
             while True:
                 output = None
                 if process.stdout is not None:
                     output = process.stdout.readline()
                 if output:
-                    log.log_info(output.rstrip())
+                    log.log_info(output)
                 if process.poll() is not None:
                     # finish reading the output
                     while True:
@@ -267,7 +330,7 @@ def _run_process(
                             output = process.stdout.readline()
                             if not output:
                                 break
-                            log.log_info(output.rstrip())
+                            log.log_info(output)
                     break
 
             if sys.stdout is not None:  # Can be None in some environments

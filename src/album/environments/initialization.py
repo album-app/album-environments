@@ -1,15 +1,14 @@
 """Initializes the environmentAPI object."""
 import os
-import platform
 import shutil
 import subprocess
+import sys
 import tarfile
 import zipfile
 from pathlib import Path
 from typing import Optional
 
 import pooch
-from album.runner.album_logging import get_active_logger
 
 from album.environments.api.controller.conda_lock_manager import ICondaLockManager
 from album.environments.api.controller.package_manager import IPackageManager
@@ -21,6 +20,7 @@ from album.environments.controller.micromamba_manager import MicromambaManager
 from album.environments.environment_api import EnvironmentAPI
 from album.environments.model.environment_default_values import EnvironmentDefaultValues
 from album.environments.utils.subcommand import SubProcessError
+from album.runner.album_logging import get_active_logger
 
 
 class PackageManagerHandler:
@@ -212,15 +212,15 @@ class PackageManagerHandler:
     @staticmethod
     def _download_mamba(mamba_base_path: Path) -> Path:
         """Download micromamba."""
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             return PackageManagerHandler._download_mamba_win(
                 mamba_base_path.joinpath("micromamba.zip")
             )
-        elif platform.system() == "Darwin":
+        elif sys.platform == "darwin":
             return PackageManagerHandler._download_mamba_macos(
                 mamba_base_path.joinpath("micromamba.tar")
             )
-        elif platform.system() == "Linux":
+        elif sys.platform == "linux":
             return PackageManagerHandler._download_mamba_linux(
                 mamba_base_path.joinpath("micromamba.tar")
             )
@@ -275,7 +275,9 @@ class PackageManagerHandler:
     @staticmethod
     def _download_mamba_linux(mamba_download_file: Path) -> Path:
         """Download micromamba for linux depending on the processor architecture."""
-        if PackageManagerHandler.check_architecture().__eq__("x86_64"):
+        # Linux reports aarch64 and ppc64le ("uname -m"), arm64 and power are kept for compatibility
+        architecture = PackageManagerHandler.check_architecture().lower()
+        if architecture == "x86_64":
             return Path(
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_X86_64.value,
@@ -285,7 +287,7 @@ class PackageManagerHandler:
                     progressbar=False,
                 )
             )
-        elif PackageManagerHandler.check_architecture().lower().__eq__("arm64"):
+        elif architecture in ("aarch64", "arm64"):
             return Path(
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_ARM64.value,
@@ -295,7 +297,7 @@ class PackageManagerHandler:
                     progressbar=False,
                 )
             )
-        elif PackageManagerHandler.check_architecture().lower().__eq__("power"):
+        elif architecture in ("ppc64le", "power"):
             return Path(
                 pooch.retrieve(
                     url=EnvironmentDefaultValues.micromamba_url_linux_POWER.value,
@@ -346,7 +348,7 @@ class PackageManagerHandler:
     @staticmethod
     def get_mamba_exe(mamba_base_path: Path) -> str:
         """Return the path to the micromamba executable."""
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             return str(
                 Path(mamba_base_path)
                 .joinpath("Library", "bin", "micromamba.exe")
@@ -359,7 +361,7 @@ class PackageManagerHandler:
     @staticmethod
     def get_conda_lock_exe(default_prefix: Path) -> str:
         """Return the path to the micromamba executable."""
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             return str(
                 Path(default_prefix).joinpath("Scripts", "conda-lock.exe").resolve()
             )
@@ -378,7 +380,7 @@ class PackageManagerHandler:
             install_base_path_.mkdir()
 
         installer = PackageManagerHandler._download_mamba(install_base_path_)
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             PackageManagerHandler._unpack_mamba_win(installer, install_base_path_)
         else:
             PackageManagerHandler._unpack_mamba_unix(installer, install_base_path_)

@@ -7,15 +7,26 @@ import time
 import unittest
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from album.environments.utils import subcommand
 from album.environments.utils.subcommand import LogfileBuffer, SubProcessError
 from album.runner import album_logging
 from album.runner.album_logging import (
-    pop_active_logger,
     get_active_logger,
     get_active_logger_in_thread,
+    pop_active_logger,
     push_active_logger,
+)
+
+# writes "step 0" to "step 2" as progress updates, then the line "step 3"
+PROGRESS_SCRIPT = (
+    "import sys\n"
+    "for i in range(3):\n"
+    "    sys.stdout.write('\\rstep %d' % i)\n"
+    "    sys.stdout.flush()\n"
+    "print('\\rstep 3')\n"
+    "print('done')\n"
 )
 
 
@@ -108,6 +119,104 @@ class TestSubcommand(unittest.TestCase):
                 cm.output[0].endswith("Running command: python %s..." % path)
             )
             self.assertTrue(cm.output[1].endswith("this should not happen"))
+
+    def test_run_debug_from(self):
+        """Plain lines from the first line debug_from matches on are logged at DEBUG."""
+        fd, path = tempfile.mkstemp(suffix=".py")
+        try:
+            with os.fdopen(fd, "w") as tmp:
+                tmp.write(
+                    "print('Transaction finished')\n"
+                    "print('To activate this environment, use:')\n"
+                    "print('    micromamba activate /some/env')\n"
+                    "print('WARNING: a warning after the hint')\n"
+                )
+            with self.assertLogs(self.logger, level="DEBUG") as cm:
+                subcommand.run(
+                    [sys.executable, path],
+                    debug_from=lambda line: line.startswith("To activate"),
+                )
+        finally:
+            os.remove(path)
+
+        levels = {r.getMessage().strip(): r.levelname for r in cm.records}
+        self.assertEqual("INFO", levels["Transaction finished"])
+        self.assertEqual("DEBUG", levels["To activate this environment, use:"])
+        self.assertEqual("DEBUG", levels["micromamba activate /some/env"])
+        # a line in a log format keeps its level
+        self.assertEqual("WARNING", levels["a warning after the hint"])
+
+    def test_run_progress(self):
+        """A line the process redraws with a lone carriage return is a progress update."""
+        with patch.object(subcommand, "PROGRESS_INTERVAL", 0):
+            records = self._run_python(PROGRESS_SCRIPT)
+
+        # the blank update before "step 0" is dropped
+        self.assertEqual(
+            [
+                ("step 0", True),
+                ("step 1", True),
+                ("step 2", True),
+                ("step 3", False),
+                ("done", False),
+            ],
+            [(r.getMessage(), getattr(r, "album_progress", False)) for r in records],
+        )
+
+    def test_run_progress_interval(self):
+        """Progress updates are logged at most once per PROGRESS_INTERVAL, lines always."""
+        with patch.object(subcommand, "PROGRESS_INTERVAL", 3600):
+            records = self._run_python(PROGRESS_SCRIPT)
+
+        self.assertEqual(
+            ["step 0", "step 3", "done"], [r.getMessage() for r in records]
+        )
+
+    def test_run_progress_at_end_of_output(self):
+        """If the output ends in a redrawn line, its last update is logged as a line."""
+        with patch.object(subcommand, "PROGRESS_INTERVAL", 3600):
+            records = self._run_python(
+                "for i in range(0, 101, 50):\n"
+                "    print('progress %d%%' % i, end='\\r', flush=True)\n"
+            )
+
+        self.assertEqual(
+            [("progress 0%", True), ("progress 100%", False)],
+            [(r.getMessage(), getattr(r, "album_progress", False)) for r in records],
+        )
+
+    def test_run_progress_cleared_at_end_of_output(self):
+        """A redrawn line the process clears before its output ends is not logged again."""
+        with patch.object(subcommand, "PROGRESS_INTERVAL", 3600):
+            records = self._run_python(
+                "print('progress 0%', end='\\r', flush=True)\n"
+                "print('progress 100%', end='\\r', flush=True)\n"
+                "print(' ' * 13, end='\\r', flush=True)\n"
+            )
+
+        self.assertEqual(["progress 0%"], [r.getMessage() for r in records])
+
+    def test_run_undecodable_output(self):
+        """Bytes that are not valid in the encoding are replaced, the run goes on."""
+        records = self._run_python(
+            "import sys\n"
+            "sys.stdout.buffer.write(b'caf\\xff\\n')\n"
+            "print('done')\n"
+        )
+
+        self.assertEqual(["caf�", "done"], [r.getMessage() for r in records])
+
+    def _run_python(self, script):
+        """Run the script with subcommand.run, return the log records of its output."""
+        fd, path = tempfile.mkstemp(suffix=".py")
+        try:
+            with os.fdopen(fd, "w") as tmp:
+                tmp.write(script)
+            with self.assertLogs(self.logger, level="INFO") as cm:
+                subcommand.run([sys.executable, path])
+        finally:
+            os.remove(path)
+        return cm.records
 
     @unittest.skip("Fixme!")
     def test_run_logging_from_thread(self):

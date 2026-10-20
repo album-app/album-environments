@@ -71,6 +71,7 @@ class CondaManager(PackageManager):
                 "--prefix",
                 os.path.normpath(environment_path),
                 os.path.normpath(Path(environment_path).joinpath("python")),
+                "-u",
                 os.path.normpath(script_full_path),
             ]
         else:
